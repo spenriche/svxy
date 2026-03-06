@@ -20,6 +20,7 @@ NEGATIVE_EXTRINSIC_TOLERANCE = -0.05
 MIN_OPEN_INTEREST = int(os.getenv("MIN_OPEN_INTEREST", "100"))
 MIN_VOLUME = int(os.getenv("MIN_VOLUME", "5"))
 MAX_SPREAD_PCT = float(os.getenv("MAX_SPREAD_PCT", "0.25"))
+DISPLAY_BACKFILL_STRIKE_ITM_PERCENT = [30, 70]
 
 
 class ScanError(RuntimeError):
@@ -270,12 +271,6 @@ def _format_option(
 
     bid_ask_spread = ask - bid
     spread_pct = bid_ask_spread / mid_price if mid_price > 0 else math.inf
-    if (
-        open_interest < MIN_OPEN_INTEREST
-        or volume < MIN_VOLUME
-        or spread_pct > MAX_SPREAD_PCT
-    ):
-        return None
 
     years_to_expiry = max(
         (expiration - now).total_seconds() / (365.25 * 24 * 60 * 60),
@@ -333,6 +328,32 @@ def _format_option(
     )
 
 
+def _option_sort_key(option: RankedOption) -> tuple[float, float, float]:
+    return (
+        option.extrinsic_per_delta,
+        -option.capital_efficiency,
+        -option.delta,
+    )
+
+
+def _build_exception_reasons(
+    *,
+    option: RankedOption,
+    strict_lower_bound_strike: float,
+    strict_upper_bound_strike: float,
+) -> list[str]:
+    reasons: list[str] = []
+    if not (strict_lower_bound_strike <= option.strike <= strict_upper_bound_strike):
+        reasons.append("outside primary ITM band")
+    if option.open_interest < MIN_OPEN_INTEREST:
+        reasons.append(f"open interest below {MIN_OPEN_INTEREST}")
+    if option.volume < MIN_VOLUME:
+        reasons.append(f"volume below {MIN_VOLUME}")
+    if option.spread_pct > MAX_SPREAD_PCT:
+        reasons.append(f"spread above {round(MAX_SPREAD_PCT * 100, 2)}%")
+    return reasons
+
+
 def _calculate_entry_score(
     *,
     market_regime: dict[str, Any],
@@ -359,9 +380,12 @@ def scan_svxy_deep_itm_calls(
 
     lower_bound_strike = spot_price * (1 - 0.60)
     upper_bound_strike = spot_price * (1 - 0.40)
+    display_lower_bound_strike = spot_price * (1 - 0.70)
+    display_upper_bound_strike = spot_price * (1 - 0.30)
     expirations = getattr(ticker, "options", ()) or ()
 
-    ranked_options: list[RankedOption] = []
+    qualified_options: list[RankedOption] = []
+    exception_options: list[tuple[RankedOption, list[str]]] = []
     for expiration_text in expirations:
         expiration = datetime.strptime(expiration_text, "%Y-%m-%d").replace(tzinfo=UTC)
         if not _within_expiration_window(expiration, now):
@@ -371,7 +395,9 @@ def scan_svxy_deep_itm_calls(
         calls_frame = option_chain.calls
         for raw_option in calls_frame.to_dict("records"):
             strike = _coerce_float(raw_option.get("strike"))
-            if strike is None or not (lower_bound_strike <= strike <= upper_bound_strike):
+            if strike is None or not (
+                display_lower_bound_strike <= strike <= display_upper_bound_strike
+            ):
                 continue
 
             ranked = _format_option(
@@ -382,21 +408,44 @@ def scan_svxy_deep_itm_calls(
                 risk_free_rate=risk_free_rate,
             )
             if ranked is not None:
-                ranked_options.append(ranked)
+                exception_reasons = _build_exception_reasons(
+                    option=ranked,
+                    strict_lower_bound_strike=lower_bound_strike,
+                    strict_upper_bound_strike=upper_bound_strike,
+                )
+                if exception_reasons:
+                    exception_options.append((ranked, exception_reasons))
+                else:
+                    qualified_options.append(ranked)
 
-    ranked_options.sort(
-        key=lambda option: (
-            option.extrinsic_per_delta,
-            -option.capital_efficiency,
-            -option.delta,
-        )
-    )
+    qualified_options.sort(key=_option_sort_key)
+    exception_options.sort(key=lambda item: _option_sort_key(item[0]))
 
     market_regime = _build_market_regime()
-    top_option = ranked_options[0] if ranked_options else None
+    top_option = qualified_options[0] if qualified_options else (
+        exception_options[0][0] if exception_options else None
+    )
     entry_score = _calculate_entry_score(market_regime=market_regime, top_option=top_option)
     market_regime["entry_score"] = entry_score
     market_regime["ideal_entry"] = entry_score >= 75
+
+    top_options: list[dict[str, Any]] = []
+    for option in qualified_options:
+        payload = asdict(option)
+        payload["filter_status"] = "qualified"
+        payload["exception_reasons"] = []
+        top_options.append(payload)
+        if len(top_options) >= top_n:
+            break
+
+    if len(top_options) < top_n:
+        for option, exception_reasons in exception_options:
+            payload = asdict(option)
+            payload["filter_status"] = "exception"
+            payload["exception_reasons"] = exception_reasons
+            top_options.append(payload)
+            if len(top_options) >= top_n:
+                break
 
     return {
         "symbol": SVXY_SYMBOL,
@@ -407,13 +456,17 @@ def scan_svxy_deep_itm_calls(
             "strike_itm_percent": [40, 60],
             "lower_bound_strike": _round(lower_bound_strike),
             "upper_bound_strike": _round(upper_bound_strike),
+            "display_backfill_itm_percent": DISPLAY_BACKFILL_STRIKE_ITM_PERCENT,
+            "display_lower_bound_strike": _round(display_lower_bound_strike),
+            "display_upper_bound_strike": _round(display_upper_bound_strike),
             "min_open_interest": MIN_OPEN_INTEREST,
             "min_volume": MIN_VOLUME,
             "max_spread_pct": MAX_SPREAD_PCT,
         },
         "market_regime": market_regime,
-        "candidate_count": len(ranked_options),
-        "top_options": [asdict(option) for option in ranked_options[:top_n]],
+        "candidate_count": len(qualified_options),
+        "exception_candidate_count": len(exception_options),
+        "top_options": top_options,
     }
 
 
@@ -444,6 +497,7 @@ def format_report(result: dict[str, Any]) -> str:
                     f"Spread %: {option['spread_pct']}",
                     f"Open Interest: {option['open_interest']}",
                     f"Volume: {option['volume']}",
+                    f"Filter Status: {option['filter_status']}",
                     "",
                 ]
             )

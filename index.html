@@ -261,6 +261,7 @@
 
       .regime-grid {
         grid-template-columns: repeat(4, minmax(0, 1fr));
+        margin-top: 14px;
       }
 
       .metric-grid {
@@ -285,6 +286,224 @@
       .metric,
       .explain-card {
         padding: 14px;
+      }
+
+      .regime-section {
+        background:
+          radial-gradient(circle at top right, rgba(96, 165, 250, 0.12), transparent 32%),
+          linear-gradient(180deg, rgba(8, 15, 34, 0.96), rgba(10, 18, 38, 0.92));
+      }
+
+      .regime-overview {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 14px;
+      }
+
+      .regime-hero,
+      .regime-scoreboard {
+        border-radius: 18px;
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        background: linear-gradient(180deg, rgba(10, 18, 38, 0.92), rgba(5, 10, 24, 0.82));
+        padding: 16px 18px;
+      }
+
+      .regime-hero {
+        position: relative;
+        overflow: hidden;
+      }
+
+      .regime-hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, rgba(96, 165, 250, 0.14), transparent 55%);
+        pointer-events: none;
+      }
+
+      .regime-kicker {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #bfdbfe;
+        margin-bottom: 10px;
+      }
+
+      .regime-headline {
+        position: relative;
+        margin: 0 0 8px;
+        font-size: 1.28rem;
+        letter-spacing: -0.03em;
+      }
+
+      .regime-copy {
+        position: relative;
+        margin: 0;
+        max-width: 640px;
+        color: var(--muted);
+        font-size: 0.92rem;
+        line-height: 1.45;
+      }
+
+      .regime-flags {
+        position: relative;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+      }
+
+      .flag-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        background: rgba(15, 23, 42, 0.66);
+        color: #dbe7fb;
+        font-size: 0.84rem;
+      }
+
+      .flag-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--blue);
+      }
+
+      .flag-pill.good .flag-dot {
+        background: var(--green);
+      }
+
+      .flag-pill.bad .flag-dot {
+        background: var(--red);
+      }
+
+      .flag-pill.warn .flag-dot {
+        background: var(--amber);
+      }
+
+      .regime-scoreboard {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        align-content: start;
+      }
+
+      .score-tile {
+        padding: 14px;
+        border-radius: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        background: rgba(2, 6, 23, 0.36);
+      }
+
+      .score-label {
+        color: var(--muted);
+        font-size: 0.78rem;
+        margin-bottom: 8px;
+      }
+
+      .score-value {
+        font-size: 1.28rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+      }
+
+      .score-tile.primary {
+        background: linear-gradient(180deg, rgba(37, 99, 235, 0.16), rgba(2, 6, 23, 0.4));
+      }
+
+      .score-tile.good .score-value {
+        color: #86efac;
+      }
+
+      .score-tile.bad .score-value {
+        color: #fca5a5;
+      }
+
+      .score-tile.warn .score-value {
+        color: #fcd34d;
+      }
+
+      .mini-card.regime-stat {
+        position: relative;
+        overflow: visible;
+        padding: 16px;
+        background: linear-gradient(180deg, rgba(8, 15, 34, 0.88), rgba(5, 10, 24, 0.78));
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+      }
+
+      .mini-card.regime-stat:hover,
+      .mini-card.regime-stat:focus-within {
+        z-index: 2;
+      }
+
+      .mini-card.regime-stat::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 2px;
+        background: rgba(96, 165, 250, 0.65);
+      }
+
+      .mini-card.regime-stat.vix::before {
+        background: rgba(96, 165, 250, 0.9);
+      }
+
+      .mini-card.regime-stat.vix3m::before {
+        background: rgba(34, 197, 94, 0.9);
+      }
+
+      .mini-card.regime-stat.vvix::before {
+        background: rgba(251, 191, 36, 0.9);
+      }
+
+      .mini-card.regime-stat.term::before {
+        background: rgba(248, 113, 113, 0.9);
+      }
+
+      .mini-topline {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .trend-tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-size: 0.74rem;
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        background: rgba(15, 23, 42, 0.6);
+        color: #dbe7fb;
+      }
+
+      .trend-tag.up {
+        color: #fca5a5;
+      }
+
+      .trend-tag.down {
+        color: #86efac;
+      }
+
+      .trend-tag.flat {
+        color: #cbd5e1;
+      }
+
+      .mini-sub {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 0.82rem;
       }
 
       .explain-card h3 {
@@ -385,6 +604,45 @@
         font-weight: 800;
       }
 
+      .rank.exception {
+        background: rgba(251, 191, 36, 0.16);
+        color: #fcd34d;
+      }
+
+      .exception-row td {
+        background: rgba(251, 191, 36, 0.02);
+      }
+
+      .table-legend {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+        color: var(--muted);
+        font-size: 0.83rem;
+      }
+
+      .legend-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .legend-swatch {
+        width: 12px;
+        height: 12px;
+        border-radius: 999px;
+      }
+
+      .legend-swatch.qualified {
+        background: rgba(96, 165, 250, 0.9);
+      }
+
+      .legend-swatch.exception {
+        background: rgba(251, 191, 36, 0.9);
+      }
+
       .tight {
         color: #86efac;
       }
@@ -461,7 +719,9 @@
         .regime-grid,
         .metric-grid,
         .columns,
-        .history-grid {
+        .history-grid,
+        .regime-overview,
+        .regime-scoreboard {
           grid-template-columns: 1fr;
         }
 
@@ -575,7 +835,7 @@
         </article>
       </section>
 
-      <section class="panel section">
+      <section class="panel section regime-section">
         <div class="section-header">
           <div>
             <h2 class="title-with-help">
@@ -620,7 +880,7 @@
               <span>Top 5 Contracts</span>
               <span class="info-icon" tabindex="0" data-tooltip="This table shows the best liquid candidates after filtering. The top row is the contract the scanner currently prefers.">?</span>
             </h2>
-            <p class="section-subtitle">Now includes liquidity, spread, and break-even context</p>
+            <p class="section-subtitle">Blue ranks are fully qualified. Amber ranks are backfill exceptions.</p>
           </div>
         </div>
         <div id="table-container" class="loading">Building rankings table...</div>
@@ -632,9 +892,9 @@
             <div>
               <h2 class="title-with-help">
                 <span>Volatility History</span>
-                <span class="info-icon" tabindex="0" data-tooltip="VIX tracks 30-day implied volatility on the S&P 500, VIX3M tracks the 3-month point, and VVIX tracks volatility of VIX itself. Together they help describe stress and stability.">?</span>
+                <span class="info-icon" tabindex="0" data-tooltip="This chart tracks the front part of the volatility curve only: VIX for 30-day implied volatility and VIX3M for the 3-month point.">?</span>
               </h2>
-              <p class="section-subtitle">Last 30 daily closes for `VIX`, `VIX3M`, and `VVIX`</p>
+              <p class="section-subtitle">Last 30 daily closes for `VIX` and `VIX3M`</p>
             </div>
           </div>
           <div id="market-history-chart" class="loading">Loading volatility history...</div>
@@ -708,6 +968,26 @@
         return `<span class="badge warn">Flat</span>`;
       }
 
+      function getTrendClass(current, previous) {
+        if (typeof current !== "number" || typeof previous !== "number") return "flat";
+        if (current > previous) return "up";
+        if (current < previous) return "down";
+        return "flat";
+      }
+
+      function getTrendText(current, previous) {
+        if (typeof current !== "number" || typeof previous !== "number") return "No prior";
+        if (current > previous) return "Rising";
+        if (current < previous) return "Falling";
+        return "Flat";
+      }
+
+      function getScoreClass(score) {
+        if (score >= 75) return "good";
+        if (score >= 45) return "warn";
+        return "bad";
+      }
+
       function renderFilters(filters) {
         document.getElementById("filters-panel").innerHTML = `
           <div class="filter-row">
@@ -726,10 +1006,24 @@
           </div>
           <div class="filter-row">
             <div class="filter-label label-with-help">
+              <span>Top 5 Backfill Band</span>
+              ${helpIcon("If there are not enough fully qualified contracts, the table can backfill with nearby exceptions from this wider ITM band. Those rows are marked in amber.")} 
+            </div>
+            <div>${filters.display_backfill_itm_percent[0]}%-${filters.display_backfill_itm_percent[1]}%</div>
+          </div>
+          <div class="filter-row">
+            <div class="filter-label label-with-help">
               <span>Strike Bounds</span>
               ${helpIcon("These are the actual strike prices implied by the current SVXY spot price and the 40% to 60% in-the-money rule.")}
             </div>
             <div>${formatCurrency(filters.lower_bound_strike)} to ${formatCurrency(filters.upper_bound_strike)}</div>
+          </div>
+          <div class="filter-row">
+            <div class="filter-label label-with-help">
+              <span>Backfill Bounds</span>
+              ${helpIcon("These are the wider strike bounds used only to populate the Top 5 table when the strict filter leaves too few names.")} 
+            </div>
+            <div>${formatCurrency(filters.display_lower_bound_strike)} to ${formatCurrency(filters.display_upper_bound_strike)}</div>
           </div>
           <div class="filter-row">
             <div class="filter-label label-with-help">
@@ -757,6 +1051,12 @@
 
       function renderRegime(regime) {
         const ideal = Boolean(regime?.ideal_entry);
+        const scoreClass = getScoreClass(regime?.entry_score ?? 0);
+        const vixTrendClass = getTrendClass(regime?.latest_vix, regime?.previous_vix);
+        const vix3mTrendClass = getTrendClass(regime?.latest_vix3m, regime?.previous_vix3m);
+        const vvixTrendClass = getTrendClass(regime?.latest_vvix, regime?.previous_vvix);
+        const curveIsHealthy = regime?.curve_state === "contango";
+
         document.getElementById("regime-badge").innerHTML = ideal
           ? `<span class="badge good">Ideal entry</span>`
           : `<span class="badge bad">Not ideal</span>`;
@@ -765,41 +1065,97 @@
         document.getElementById("entry-score").textContent = regime?.entry_score ?? "--";
         document.getElementById("regime-reason").textContent = regime?.reason || "Regime unavailable.";
 
-        document.getElementById("regime-panel").className = "regime-grid";
+        document.getElementById("regime-panel").className = "";
         document.getElementById("regime-panel").innerHTML = `
-          <div class="mini-card">
-            <div class="mini-label label-with-help">
-              <span>VIX</span>
-              ${helpIcon("The VIX is the market's implied 30-day volatility level for the S&P 500. Higher means more fear and bigger expected moves.")}
+          <div class="regime-overview">
+            <div class="regime-hero">
+              <div class="regime-kicker">Market Regime Snapshot</div>
+              <h3 class="regime-headline">
+                ${ideal ? "Setup quality is supportive" : "Setup quality is currently weak"}
+              </h3>
+              <p class="regime-copy">
+                ${ideal
+                  ? "The volatility backdrop and the top contract are aligned well enough to justify deeper review."
+                  : "The scanner is seeing stress, weak structure, or poor execution quality. That does not forbid a trade, but it does mean the setup is not clean."}
+              </p>
+              <div class="regime-flags">
+                <span class="flag-pill ${curveIsHealthy ? "good" : "bad"}">
+                  <span class="flag-dot"></span>
+                  Curve: ${regime?.curve_state || "Unknown"}
+                </span>
+                <span class="flag-pill ${vixTrendClass === "down" ? "good" : vixTrendClass === "up" ? "bad" : "warn"}">
+                  <span class="flag-dot"></span>
+                  VIX: ${getTrendText(regime?.latest_vix, regime?.previous_vix)}
+                </span>
+                <span class="flag-pill ${vvixTrendClass === "down" ? "good" : vvixTrendClass === "up" ? "bad" : "warn"}">
+                  <span class="flag-dot"></span>
+                  VVIX: ${getTrendText(regime?.latest_vvix, regime?.previous_vvix)}
+                </span>
+              </div>
             </div>
-            <div class="mini-value">${formatNumber(regime?.latest_vix, 2)}</div>
-            <div class="muted">Prev ${formatNumber(regime?.previous_vix, 2)}</div>
+            <div class="regime-scoreboard">
+              <div class="score-tile primary ${scoreClass}">
+                <div class="score-label">Entry Score</div>
+                <div class="score-value">${regime?.entry_score ?? "--"} / 100</div>
+              </div>
+              <div class="score-tile ${curveIsHealthy ? "good" : "bad"}">
+                <div class="score-label">Curve State</div>
+                <div class="score-value">${regime?.curve_state || "--"}</div>
+              </div>
+              <div class="score-tile ${regime?.latest_vix > 30 ? "warn" : "bad"}">
+                <div class="score-label">VIX Level</div>
+                <div class="score-value">${formatNumber(regime?.latest_vix, 2)}</div>
+              </div>
+              <div class="score-tile ${vvixTrendClass === "down" ? "good" : vvixTrendClass === "up" ? "bad" : "warn"}">
+                <div class="score-label">VVIX Trend</div>
+                <div class="score-value">${getTrendText(regime?.latest_vvix, regime?.previous_vvix)}</div>
+              </div>
+            </div>
           </div>
-          <div class="mini-card">
-            <div class="mini-label label-with-help">
-              <span>VIX3M</span>
-              ${helpIcon("VIX3M is the 3-month version of VIX. Comparing VIX to VIX3M shows whether short-term fear is higher or lower than medium-term fear.")}
+          <div class="regime-grid">
+            <div class="mini-card regime-stat vix">
+              <div class="mini-topline">
+                <div class="mini-label label-with-help">
+                  <span>VIX</span>
+                  ${helpIcon("The VIX is the market's implied 30-day volatility level for the S&P 500. Higher means more fear and bigger expected moves.")}
+                </div>
+                <span class="trend-tag ${vixTrendClass}">${getTrendText(regime?.latest_vix, regime?.previous_vix)}</span>
+              </div>
+              <div class="mini-value">${formatNumber(regime?.latest_vix, 2)}</div>
+              <div class="mini-sub">Previous close ${formatNumber(regime?.previous_vix, 2)}</div>
             </div>
-            <div class="mini-value">${formatNumber(regime?.latest_vix3m, 2)}</div>
-            <div class="muted">Prev ${formatNumber(regime?.previous_vix3m, 2)}</div>
-          </div>
-          <div class="mini-card">
-            <div class="mini-label label-with-help">
-              <span>VVIX</span>
-              ${helpIcon("VVIX is volatility of VIX itself. Rising VVIX often means the vol market is becoming more unstable even if VIX is not exploding yet.")}
+            <div class="mini-card regime-stat vix3m">
+              <div class="mini-topline">
+                <div class="mini-label label-with-help">
+                  <span>VIX3M</span>
+                  ${helpIcon("VIX3M is the 3-month version of VIX. Comparing VIX to VIX3M shows whether short-term fear is higher or lower than medium-term fear.")}
+                </div>
+                <span class="trend-tag ${vix3mTrendClass}">${getTrendText(regime?.latest_vix3m, regime?.previous_vix3m)}</span>
+              </div>
+              <div class="mini-value">${formatNumber(regime?.latest_vix3m, 2)}</div>
+              <div class="mini-sub">Previous close ${formatNumber(regime?.previous_vix3m, 2)}</div>
             </div>
-            <div class="mini-value">${formatNumber(regime?.latest_vvix, 2)}</div>
-            <div class="muted">Prev ${formatNumber(regime?.previous_vvix, 2)}</div>
-          </div>
-          <div class="mini-card">
-            <div class="mini-label label-with-help">
-              <span>Term Structure</span>
-              ${helpIcon("This compares front-month volatility to 3-month volatility. Contango is usually healthier for short-vol trades. Backwardation often signals stress.")}
+            <div class="mini-card regime-stat vvix">
+              <div class="mini-topline">
+                <div class="mini-label label-with-help">
+                  <span>VVIX</span>
+                  ${helpIcon("VVIX is volatility of VIX itself. Rising VVIX often means the vol market is becoming more unstable even if VIX is not exploding yet.")}
+                </div>
+                <span class="trend-tag ${vvixTrendClass}">${getTrendText(regime?.latest_vvix, regime?.previous_vvix)}</span>
+              </div>
+              <div class="mini-value">${formatNumber(regime?.latest_vvix, 2)}</div>
+              <div class="mini-sub">Previous close ${formatNumber(regime?.previous_vvix, 2)}</div>
             </div>
-            <div class="mini-value">${formatNumber(regime?.term_spread, 2)}</div>
-            <div class="muted">
-              ${getCurveBadge(regime?.curve_state)}
-              <span style="margin-left: 8px">VIX / VIX3M ${formatNumber(regime?.term_ratio, 3)}</span>
+            <div class="mini-card regime-stat term">
+              <div class="mini-topline">
+                <div class="mini-label label-with-help">
+                  <span>Term Structure</span>
+                  ${helpIcon("This compares front-month volatility to 3-month volatility. Contango is usually healthier for short-vol trades. Backwardation often signals stress.")}
+                </div>
+                ${getCurveBadge(regime?.curve_state)}
+              </div>
+              <div class="mini-value">${formatNumber(regime?.term_spread, 2)}</div>
+              <div class="mini-sub">VIX / VIX3M ${formatNumber(regime?.term_ratio, 3)}</div>
             </div>
           </div>
         `;
@@ -895,27 +1251,37 @@
 
         container.className = "table-wrap";
         container.innerHTML = `
+          <div class="table-legend">
+            <span class="legend-chip">
+              <span class="legend-swatch qualified"></span>
+              Fully qualified
+            </span>
+            <span class="legend-chip">
+              <span class="legend-swatch exception"></span>
+              Backfill exception
+            </span>
+          </div>
           <table>
             <thead>
               <tr>
-                <th>Rank ${helpIcon("The scanner sorts contracts first by lowest extrinsic per delta, then highest capital efficiency, then highest delta.")}</th>
-                <th>Expiration ${helpIcon("The option's expiration date.")}</th>
-                <th>Strike ${helpIcon("The fixed price at which the call lets you buy SVXY.")}</th>
-                <th>Mid ${helpIcon("Average of the current bid and ask.")}</th>
-                <th>Delta ${helpIcon("Estimated change in option price for a $1 move in SVXY.")}</th>
-                <th>Extrinsic / Delta ${helpIcon("Time value paid per unit of directional exposure. Lower is better.")}</th>
-                <th>Cap Eff ${helpIcon("Capital efficiency. Higher means more delta exposure per dollar of option premium.")}</th>
-                <th>Spread % ${helpIcon("Bid/ask spread divided by midpoint. Lower is easier to trade.")}</th>
-                <th>Volume ${helpIcon("Contracts traded today.")}</th>
-                <th>OI ${helpIcon("Open interest: number of currently open contracts.")}</th>
-                <th>Break-even ${helpIcon("Strike plus premium paid. This is the expiration price needed to fully cover your cost.")}</th>
-                <th>Extrinsic / Day ${helpIcon("Time value cost spread across the remaining life of the option.")}</th>
+                <th>Rank</th>
+                <th>Expiration</th>
+                <th>Strike</th>
+                <th>Mid</th>
+                <th>Delta</th>
+                <th>Extrinsic / Delta</th>
+                <th>Cap Eff</th>
+                <th>Spread %</th>
+                <th>Volume</th>
+                <th>OI</th>
+                <th>Break-even</th>
+                <th>Extrinsic / Day</th>
               </tr>
             </thead>
             <tbody>
               ${options.map((option, index) => `
-                <tr>
-                  <td><span class="rank">${index + 1}</span></td>
+                <tr class="${option.filter_status === "exception" ? "exception-row" : ""}" title="${option.filter_status === "exception" ? escapeHtml(`Backfill exception: ${(option.exception_reasons || []).join(", ")}`) : "Fully qualified contract"}">
+                  <td><span class="rank ${option.filter_status === "exception" ? "exception" : ""}">${index + 1}</span></td>
                   <td>${escapeHtml(option.expiration)}</td>
                   <td>${formatCurrency(option.strike)}</td>
                   <td>${formatCurrency(option.mid_price)}</td>
@@ -1090,11 +1456,6 @@
               label: "VIX3M",
               color: "#22c55e",
               values: history.map((point) => point.vix3m),
-            },
-            {
-              label: "VVIX",
-              color: "#fbbf24",
-              values: history.map((point) => point.vvix),
             },
           ],
           history.map((point) => point.date),
