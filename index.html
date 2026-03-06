@@ -167,6 +167,68 @@
         margin-bottom: 10px;
       }
 
+      .label-with-help,
+      .title-with-help {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .info-icon {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        background: rgba(148, 163, 184, 0.08);
+        color: #cbd5e1;
+        font-size: 0.72rem;
+        font-weight: 800;
+        cursor: help;
+        line-height: 1;
+      }
+
+      .info-icon::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        left: 50%;
+        bottom: calc(100% + 10px);
+        transform: translateX(-50%);
+        width: min(260px, 70vw);
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: rgba(2, 6, 23, 0.96);
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        color: var(--text);
+        font-size: 0.78rem;
+        font-weight: 500;
+        line-height: 1.4;
+        text-align: left;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition:
+          opacity 0.14s ease,
+          visibility 0.14s ease;
+        z-index: 10;
+        box-shadow: 0 16px 40px rgba(2, 6, 23, 0.45);
+      }
+
+      .info-icon:hover::after,
+      .info-icon:focus-visible::after {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .info-icon:focus-visible {
+        outline: 2px solid rgba(96, 165, 250, 0.45);
+        outline-offset: 2px;
+      }
+
       .stat-value {
         font-size: clamp(1.35rem, 2.1vw, 2rem);
         letter-spacing: -0.03em;
@@ -191,7 +253,8 @@
       }
 
       .regime-grid,
-      .metric-grid {
+      .metric-grid,
+      .explain-grid {
         display: grid;
         gap: 12px;
       }
@@ -204,17 +267,36 @@
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
 
+      .explain-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin-bottom: 18px;
+      }
+
       .mini-card,
       .metric,
-      .chart-card {
+      .chart-card,
+      .explain-card {
         border-radius: 16px;
         border: 1px solid rgba(148, 163, 184, 0.1);
         background: rgba(2, 6, 23, 0.26);
       }
 
       .mini-card,
-      .metric {
+      .metric,
+      .explain-card {
         padding: 14px;
+      }
+
+      .explain-card h3 {
+        margin: 0 0 8px;
+        font-size: 0.96rem;
+      }
+
+      .explain-card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.87rem;
+        line-height: 1.45;
       }
 
       .mini-label,
@@ -407,34 +489,87 @@
         </div>
       </section>
 
+      <section class="grid explain-grid">
+        <article class="panel explain-card">
+          <h3 class="title-with-help">
+            How to read the score
+            <span class="info-icon" tabindex="0" data-tooltip="The entry score blends market regime plus top-contract execution quality. Higher is better, but it is not a guarantee of returns.">?</span>
+          </h3>
+          <p>
+            Think of `Entry Score` as a quick checklist. Higher scores mean the
+            volatility backdrop and the option itself both look cleaner.
+          </p>
+        </article>
+        <article class="panel explain-card">
+          <h3 class="title-with-help">
+            What makes a setup good
+            <span class="info-icon" tabindex="0" data-tooltip="Average traders usually want lower extrinsic cost, tighter spreads, better liquidity, and a healthier vol curve.">?</span>
+          </h3>
+          <p>
+            Better setups usually have lower extrinsic cost, tighter spreads,
+            decent volume/open interest, and a curve that is not screaming
+            front-end stress.
+          </p>
+        </article>
+        <article class="panel explain-card">
+          <h3 class="title-with-help">
+            What makes a setup dangerous
+            <span class="info-icon" tabindex="0" data-tooltip="Wide spreads, low liquidity, backwardation, or rising VVIX can mean poor execution and unstable short-vol conditions.">?</span>
+          </h3>
+          <p>
+            Be careful when spreads are wide, liquidity is thin, or the curve is
+            in backwardation. That usually means tougher fills and a shakier
+            short-vol regime.
+          </p>
+        </article>
+      </section>
+
       <section class="grid stats">
         <article class="panel stat-card">
-          <div class="stat-label">SVXY Spot</div>
+          <div class="stat-label label-with-help">
+            <span>SVXY Spot</span>
+            <span class="info-icon" tabindex="0" data-tooltip="This is the current price of SVXY. The scanner uses it to decide which strikes count as 40% to 60% in the money.">?</span>
+          </div>
           <div class="stat-value" id="spot-price">--</div>
           <div class="stat-note">Underlying used for strike filtering</div>
         </article>
         <article class="panel stat-card">
-          <div class="stat-label">Qualified Contracts</div>
+          <div class="stat-label label-with-help">
+            <span>Qualified Contracts</span>
+            <span class="info-icon" tabindex="0" data-tooltip="This is how many calls survived the expiration window, moneyness filter, and liquidity checks like open interest, volume, and spread size.">?</span>
+          </div>
           <div class="stat-value" id="candidate-count">--</div>
           <div class="stat-note">After expiry + liquidity filters</div>
         </article>
         <article class="panel stat-card">
-          <div class="stat-label">Entry Score</div>
+          <div class="stat-label label-with-help">
+            <span>Entry Score</span>
+            <span class="info-icon" tabindex="0" data-tooltip="A rough 0 to 100 composite score. It rewards a healthier vol regime plus a top contract with tighter spreads and better capital efficiency.">?</span>
+          </div>
           <div class="stat-value" id="entry-score">--</div>
           <div class="stat-note">Regime + best-contract quality score</div>
         </article>
         <article class="panel stat-card">
-          <div class="stat-label">Curve State</div>
+          <div class="stat-label label-with-help">
+            <span>Curve State</span>
+            <span class="info-icon" tabindex="0" data-tooltip="Contango means longer-dated volatility is above front-month volatility, which is usually friendlier for short-vol trades. Backwardation means front-end stress is elevated.">?</span>
+          </div>
           <div class="stat-value" id="curve-state">--</div>
           <div class="stat-note">Front vs 3M vol structure</div>
         </article>
         <article class="panel stat-card">
-          <div class="stat-label">Best Extrinsic / Delta</div>
+          <div class="stat-label label-with-help">
+            <span>Best Extrinsic / Delta</span>
+            <span class="info-icon" tabindex="0" data-tooltip="This measures how much time value you are paying for each unit of delta. Lower usually means a more efficient stock-replacement style call.">?</span>
+          </div>
           <div class="stat-value" id="best-extrinsic">--</div>
           <div class="stat-note">Lower is better</div>
         </article>
         <article class="panel stat-card">
-          <div class="stat-label">Best Spread %</div>
+          <div class="stat-label label-with-help">
+            <span>Best Spread %</span>
+            <span class="info-icon" tabindex="0" data-tooltip="This shows the bid/ask spread as a percent of the option midpoint. Lower is easier to trade. High values mean you may give up edge on the fill.">?</span>
+          </div>
           <div class="stat-value" id="best-spread-pct">--</div>
           <div class="stat-note">Execution quality on top contract</div>
         </article>
@@ -443,7 +578,10 @@
       <section class="panel section">
         <div class="section-header">
           <div>
-            <h2>Regime Panel</h2>
+            <h2 class="title-with-help">
+              <span>Regime Panel</span>
+              <span class="info-icon" tabindex="0" data-tooltip="This section tracks the volatility environment. It is meant to answer whether the short-vol backdrop looks healthy, stressed, or unstable right now.">?</span>
+            </h2>
             <p class="section-subtitle">Use the curve, vol-of-vol, and entry score together</p>
           </div>
           <div id="regime-badge"></div>
@@ -456,7 +594,10 @@
         <article class="panel section">
           <div class="section-header">
             <div>
-              <h2>Best Contract</h2>
+              <h2 class="title-with-help">
+                <span>Best Contract</span>
+                <span class="info-icon" tabindex="0" data-tooltip="This is the highest-ranked call after your scanner compares all eligible contracts by extrinsic cost per delta, capital efficiency, and delta.">?</span>
+              </h2>
               <p class="section-subtitle">Top-ranked call after filters and ranking logic</p>
             </div>
           </div>
@@ -464,7 +605,10 @@
         </article>
 
         <aside class="panel section">
-          <h2>Scan Filters</h2>
+          <h2 class="title-with-help">
+            <span>Scan Filters</span>
+            <span class="info-icon" tabindex="0" data-tooltip="These are the hard rules used to narrow the universe before ranking anything. If a contract fails one of these rules, it does not appear below.">?</span>
+          </h2>
           <div class="filters" id="filters-panel"></div>
         </aside>
       </section>
@@ -472,7 +616,10 @@
       <section class="panel section" style="margin-top: 18px">
         <div class="section-header">
           <div>
-            <h2>Top 5 Contracts</h2>
+            <h2 class="title-with-help">
+              <span>Top 5 Contracts</span>
+              <span class="info-icon" tabindex="0" data-tooltip="This table shows the best liquid candidates after filtering. The top row is the contract the scanner currently prefers.">?</span>
+            </h2>
             <p class="section-subtitle">Now includes liquidity, spread, and break-even context</p>
           </div>
         </div>
@@ -483,7 +630,10 @@
         <article class="panel section">
           <div class="section-header">
             <div>
-              <h2>Volatility History</h2>
+              <h2 class="title-with-help">
+                <span>Volatility History</span>
+                <span class="info-icon" tabindex="0" data-tooltip="VIX tracks 30-day implied volatility on the S&P 500, VIX3M tracks the 3-month point, and VVIX tracks volatility of VIX itself. Together they help describe stress and stability.">?</span>
+              </h2>
               <p class="section-subtitle">Last 30 daily closes for `VIX`, `VIX3M`, and `VVIX`</p>
             </div>
           </div>
@@ -493,7 +643,10 @@
         <article class="panel section">
           <div class="section-header">
             <div>
-              <h2>Scan Snapshots</h2>
+              <h2 class="title-with-help">
+                <span>Scan Snapshots</span>
+                <span class="info-icon" tabindex="0" data-tooltip="This stores recent scans in your browser so you can see whether the best setup is improving or getting worse over time.">?</span>
+              </h2>
               <p class="section-subtitle">Rolling browser-stored history of best setup quality</p>
             </div>
           </div>
@@ -545,6 +698,10 @@
           .replaceAll('"', "&quot;");
       }
 
+      function helpIcon(text) {
+        return `<span class="info-icon" tabindex="0" data-tooltip="${escapeHtml(text)}">?</span>`;
+      }
+
       function getCurveBadge(curveState) {
         if (curveState === "contango") return `<span class="badge good">Contango</span>`;
         if (curveState === "backwardation") return `<span class="badge bad">Backwardation</span>`;
@@ -554,27 +711,45 @@
       function renderFilters(filters) {
         document.getElementById("filters-panel").innerHTML = `
           <div class="filter-row">
-            <div class="filter-label">Expiry Window</div>
+            <div class="filter-label label-with-help">
+              <span>Expiry Window</span>
+              ${helpIcon("Only options expiring 6 to 18 months from today are considered. This keeps the scan focused on longer-dated contracts rather than short-term trades.")}
+            </div>
             <div>${filters.expiration_window_months[0]}-${filters.expiration_window_months[1]} months</div>
           </div>
           <div class="filter-row">
-            <div class="filter-label">ITM Range</div>
+            <div class="filter-label label-with-help">
+              <span>ITM Range</span>
+              ${helpIcon("In the money means the strike is below the stock price for a call. This scanner only looks at strikes that are already 40% to 60% in the money.")}
+            </div>
             <div>${filters.strike_itm_percent[0]}%-${filters.strike_itm_percent[1]}%</div>
           </div>
           <div class="filter-row">
-            <div class="filter-label">Strike Bounds</div>
+            <div class="filter-label label-with-help">
+              <span>Strike Bounds</span>
+              ${helpIcon("These are the actual strike prices implied by the current SVXY spot price and the 40% to 60% in-the-money rule.")}
+            </div>
             <div>${formatCurrency(filters.lower_bound_strike)} to ${formatCurrency(filters.upper_bound_strike)}</div>
           </div>
           <div class="filter-row">
-            <div class="filter-label">Min Open Interest</div>
+            <div class="filter-label label-with-help">
+              <span>Min Open Interest</span>
+              ${helpIcon("Open interest is how many contracts remain open. Higher numbers usually mean better liquidity and more reliable quotes.")}
+            </div>
             <div>${filters.min_open_interest}</div>
           </div>
           <div class="filter-row">
-            <div class="filter-label">Min Volume</div>
+            <div class="filter-label label-with-help">
+              <span>Min Volume</span>
+              ${helpIcon("Volume is how many contracts traded today. Low volume can mean stale prices and harder exits.")}
+            </div>
             <div>${filters.min_volume}</div>
           </div>
           <div class="filter-row">
-            <div class="filter-label">Max Spread %</div>
+            <div class="filter-label label-with-help">
+              <span>Max Spread %</span>
+              ${helpIcon("This caps how wide the bid/ask spread can be versus the midpoint. Wide spreads make it easier to overpay when you enter or exit.")}
+            </div>
             <div>${formatPercent(filters.max_spread_pct, 2)}</div>
           </div>
         `;
@@ -593,22 +768,34 @@
         document.getElementById("regime-panel").className = "regime-grid";
         document.getElementById("regime-panel").innerHTML = `
           <div class="mini-card">
-            <div class="mini-label">VIX</div>
+            <div class="mini-label label-with-help">
+              <span>VIX</span>
+              ${helpIcon("The VIX is the market's implied 30-day volatility level for the S&P 500. Higher means more fear and bigger expected moves.")}
+            </div>
             <div class="mini-value">${formatNumber(regime?.latest_vix, 2)}</div>
             <div class="muted">Prev ${formatNumber(regime?.previous_vix, 2)}</div>
           </div>
           <div class="mini-card">
-            <div class="mini-label">VIX3M</div>
+            <div class="mini-label label-with-help">
+              <span>VIX3M</span>
+              ${helpIcon("VIX3M is the 3-month version of VIX. Comparing VIX to VIX3M shows whether short-term fear is higher or lower than medium-term fear.")}
+            </div>
             <div class="mini-value">${formatNumber(regime?.latest_vix3m, 2)}</div>
             <div class="muted">Prev ${formatNumber(regime?.previous_vix3m, 2)}</div>
           </div>
           <div class="mini-card">
-            <div class="mini-label">VVIX</div>
+            <div class="mini-label label-with-help">
+              <span>VVIX</span>
+              ${helpIcon("VVIX is volatility of VIX itself. Rising VVIX often means the vol market is becoming more unstable even if VIX is not exploding yet.")}
+            </div>
             <div class="mini-value">${formatNumber(regime?.latest_vvix, 2)}</div>
             <div class="muted">Prev ${formatNumber(regime?.previous_vvix, 2)}</div>
           </div>
           <div class="mini-card">
-            <div class="mini-label">Term Structure</div>
+            <div class="mini-label label-with-help">
+              <span>Term Structure</span>
+              ${helpIcon("This compares front-month volatility to 3-month volatility. Contango is usually healthier for short-vol trades. Backwardation often signals stress.")}
+            </div>
             <div class="mini-value">${formatNumber(regime?.term_spread, 2)}</div>
             <div class="muted">
               ${getCurveBadge(regime?.curve_state)}
@@ -632,39 +819,66 @@
           <p>Lowest extrinsic per delta among liquid contracts inside the target moneyness window.</p>
           <div class="metric-grid">
             <div class="metric">
-              <div class="metric-label">Mid / Break-even</div>
+              <div class="metric-label label-with-help">
+                <span>Mid / Break-even</span>
+                ${helpIcon("Mid is the average of bid and ask. Break-even is strike plus premium paid, which is the stock price needed at expiration to fully cover your cost.")}
+              </div>
               <div class="metric-value">${formatCurrency(option.mid_price)} / ${formatCurrency(option.break_even)}</div>
             </div>
             <div class="metric">
-              <div class="metric-label">Delta / Capital Efficiency</div>
+              <div class="metric-label label-with-help">
+                <span>Delta / Capital Efficiency</span>
+                ${helpIcon("Delta estimates how much the call moves for a $1 move in SVXY. Capital efficiency compares that exposure with the option's price, so higher means more delta per dollar spent.")}
+              </div>
               <div class="metric-value">${formatNumber(option.delta, 4)} / ${formatNumber(option.capital_efficiency, 4)}</div>
             </div>
             <div class="metric">
-              <div class="metric-label">Intrinsic / Extrinsic</div>
+              <div class="metric-label label-with-help">
+                <span>Intrinsic / Extrinsic</span>
+                ${helpIcon("Intrinsic value is the amount the call is already in the money. Extrinsic value is everything you pay above that, which is mostly time value and implied volatility.")}
+              </div>
               <div class="metric-value">${formatCurrency(option.intrinsic_value)} / ${formatCurrency(option.extrinsic_value)}</div>
             </div>
             <div class="metric">
-              <div class="metric-label">Spread / Spread %</div>
+              <div class="metric-label label-with-help">
+                <span>Spread / Spread %</span>
+                ${helpIcon("The spread is the difference between ask and bid. Spread percent scales that difference by the midpoint so you can compare execution cost across contracts.")}
+              </div>
               <div class="metric-value">${formatCurrency(option.bid_ask_spread)} / ${formatPercent(option.spread_pct, 2)}</div>
             </div>
             <div class="metric">
-              <div class="metric-label">Volume / Open Interest</div>
+              <div class="metric-label label-with-help">
+                <span>Volume / Open Interest</span>
+                ${helpIcon("Volume shows today's trading activity. Open interest shows how many contracts are currently open. Higher values usually mean easier trading and better price discovery.")}
+              </div>
               <div class="metric-value">${option.volume} / ${option.open_interest}</div>
             </div>
             <div class="metric">
-              <div class="metric-label">Days / Extrinsic per Day</div>
+              <div class="metric-label label-with-help">
+                <span>Days / Extrinsic per Day</span>
+                ${helpIcon("Days is time left to expiration. Extrinsic per day spreads the time value cost across remaining days, which helps compare contracts with different maturities.")}
+              </div>
               <div class="metric-value">${option.days_to_expiry} / ${formatCurrency(option.extrinsic_per_day)}</div>
             </div>
             <div class="metric">
-              <div class="metric-label">Bid / Ask</div>
+              <div class="metric-label label-with-help">
+                <span>Bid / Ask</span>
+                ${helpIcon("Bid is what buyers are currently offering. Ask is what sellers want. The real fill often lands somewhere between them.")}
+              </div>
               <div class="metric-value">${formatCurrency(option.bid)} / ${formatCurrency(option.ask)}</div>
             </div>
             <div class="metric">
-              <div class="metric-label">Replacement Discount</div>
+              <div class="metric-label label-with-help">
+                <span>Replacement Discount</span>
+                ${helpIcon("This compares delta-adjusted stock exposure with the option premium. Higher values can mean a more efficient stock replacement, but only if liquidity is real.")}
+              </div>
               <div class="metric-value">${formatCurrency(option.replacement_discount)}</div>
             </div>
             <div class="metric">
-              <div class="metric-label">IV / Extrinsic per Delta</div>
+              <div class="metric-label label-with-help">
+                <span>IV / Extrinsic per Delta</span>
+                ${helpIcon("IV is the implied volatility embedded in the option price. Extrinsic per delta tells you how much non-intrinsic value you are paying for each unit of directional exposure.")}
+              </div>
               <div class="metric-value">${formatPercent(option.implied_volatility, 2)} / ${formatNumber(option.extrinsic_per_delta, 4)}</div>
             </div>
           </div>
@@ -684,18 +898,18 @@
           <table>
             <thead>
               <tr>
-                <th>Rank</th>
-                <th>Expiration</th>
-                <th>Strike</th>
-                <th>Mid</th>
-                <th>Delta</th>
-                <th>Extrinsic / Delta</th>
-                <th>Cap Eff</th>
-                <th>Spread %</th>
-                <th>Volume</th>
-                <th>OI</th>
-                <th>Break-even</th>
-                <th>Extrinsic / Day</th>
+                <th>Rank ${helpIcon("The scanner sorts contracts first by lowest extrinsic per delta, then highest capital efficiency, then highest delta.")}</th>
+                <th>Expiration ${helpIcon("The option's expiration date.")}</th>
+                <th>Strike ${helpIcon("The fixed price at which the call lets you buy SVXY.")}</th>
+                <th>Mid ${helpIcon("Average of the current bid and ask.")}</th>
+                <th>Delta ${helpIcon("Estimated change in option price for a $1 move in SVXY.")}</th>
+                <th>Extrinsic / Delta ${helpIcon("Time value paid per unit of directional exposure. Lower is better.")}</th>
+                <th>Cap Eff ${helpIcon("Capital efficiency. Higher means more delta exposure per dollar of option premium.")}</th>
+                <th>Spread % ${helpIcon("Bid/ask spread divided by midpoint. Lower is easier to trade.")}</th>
+                <th>Volume ${helpIcon("Contracts traded today.")}</th>
+                <th>OI ${helpIcon("Open interest: number of currently open contracts.")}</th>
+                <th>Break-even ${helpIcon("Strike plus premium paid. This is the expiration price needed to fully cover your cost.")}</th>
+                <th>Extrinsic / Day ${helpIcon("Time value cost spread across the remaining life of the option.")}</th>
               </tr>
             </thead>
             <tbody>
