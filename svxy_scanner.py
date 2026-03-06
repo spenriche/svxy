@@ -189,6 +189,58 @@ def _fetch_close_history(symbol: str, *, period: str = "3mo") -> list[dict[str, 
     return points
 
 
+def _fetch_intraday_ohlc(
+    symbol: str,
+    *,
+    period: str = "1d",
+    interval: str = "5m",
+    fallback_session_count: int = 1,
+) -> list[dict[str, Any]]:
+    def build_candles(history: Any) -> list[dict[str, Any]]:
+        candles: list[dict[str, Any]] = []
+        for index, row in history.iterrows():
+            open_price = _coerce_float(row.get("Open"))
+            high_price = _coerce_float(row.get("High"))
+            low_price = _coerce_float(row.get("Low"))
+            close_price = _coerce_float(row.get("Close"))
+            if None in (open_price, high_price, low_price, close_price):
+                continue
+
+            candles.append(
+                {
+                    "date": index.date().isoformat(),
+                    "time": index.strftime("%H:%M"),
+                    "open": _round(open_price),
+                    "high": _round(high_price),
+                    "low": _round(low_price),
+                    "close": _round(close_price),
+                }
+            )
+        return candles
+
+    history = yf.Ticker(symbol).history(period=period, interval=interval, auto_adjust=False)
+    candles = build_candles(history) if not history.empty else []
+    if candles:
+        return candles
+
+    # Yahoo will sometimes return an empty 1d intraday frame for index symbols
+    # even though the latest session exists in a wider 5d window.
+    fallback_history = yf.Ticker(symbol).history(period="5d", interval=interval, auto_adjust=False)
+    if fallback_history.empty:
+        return []
+
+    ordered_sessions = sorted({index.date() for index in fallback_history.index})
+    if not ordered_sessions:
+        return []
+
+    selected_sessions = set(ordered_sessions[-max(fallback_session_count, 1) :])
+    session_slice = fallback_history[fallback_history.index.date.map(lambda value: value in selected_sessions)]
+    if session_slice.empty:
+        return []
+
+    return build_candles(session_slice)
+
+
 def _calculate_pct_return(
     current_value: float,
     previous_value: float | None,
@@ -247,6 +299,10 @@ def _build_market_regime() -> dict[str, Any]:
     vix_history = _fetch_close_history(VIX_SYMBOL)
     vix3m_history = _fetch_close_history(VIX3M_SYMBOL)
     vvix_history = _fetch_close_history(VVIX_SYMBOL)
+    vix_intraday = _fetch_intraday_ohlc(VIX_SYMBOL)
+    vix3m_intraday = _fetch_intraday_ohlc(VIX3M_SYMBOL)
+    vix_intraday_2d = _fetch_intraday_ohlc(VIX_SYMBOL, period="2d", fallback_session_count=2)
+    vix3m_intraday_2d = _fetch_intraday_ohlc(VIX3M_SYMBOL, period="2d", fallback_session_count=2)
 
     latest_vix, previous_vix = _latest_and_previous(vix_history)
     latest_vix3m, previous_vix3m = _latest_and_previous(vix3m_history)
@@ -336,6 +392,12 @@ def _build_market_regime() -> dict[str, Any]:
         "term_ratio": term_ratio,
         "reason": ", ".join(reason_parts),
         "history": history[-30:],
+        "intraday": {
+            "vix": vix_intraday,
+            "vix3m": vix3m_intraday,
+            "vix_2d": vix_intraday_2d,
+            "vix3m_2d": vix3m_intraday_2d,
+        },
     }
 
 

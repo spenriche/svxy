@@ -528,7 +528,7 @@
       }
 
       .explain-card h3 {
-        margin: 0 0 8px;
+        margin: 0;
         font-size: 0.96rem;
       }
 
@@ -537,6 +537,42 @@
         color: var(--muted);
         font-size: 0.87rem;
         line-height: 1.45;
+      }
+
+      .explain-toggle {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        background: transparent;
+        box-shadow: none;
+        padding: 0;
+        color: var(--text);
+        text-align: left;
+      }
+
+      .explain-toggle:hover {
+        filter: none;
+      }
+
+      .explain-chevron {
+        color: var(--muted);
+        font-size: 0.9rem;
+        transition: transform 0.16s ease;
+      }
+
+      .explain-card.expanded .explain-chevron {
+        transform: rotate(180deg);
+      }
+
+      .explain-body {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explain-card.expanded .explain-body {
+        display: block;
       }
 
       .mini-label,
@@ -704,6 +740,106 @@
         position: relative;
       }
 
+      .candlestick-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .regime-top-charts {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 14px;
+      }
+
+      .candlestick-card {
+        padding: 14px;
+        position: relative;
+        border-radius: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.1);
+        background: rgba(2, 6, 23, 0.26);
+      }
+
+      .candlestick-header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .candlestick-title {
+        font-size: 0.94rem;
+        font-weight: 700;
+        color: #dbe7fb;
+      }
+
+      .candlestick-subtitle {
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+
+      .candlestick-shell {
+        height: 220px;
+        position: relative;
+      }
+
+      .candlestick-svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+        cursor: crosshair;
+      }
+
+      .candle-wick {
+        stroke-width: 2;
+        stroke-linecap: round;
+      }
+
+      .candle-body.up,
+      .candle-wick.up {
+        fill: rgba(34, 197, 94, 0.92);
+        stroke: rgba(34, 197, 94, 0.92);
+      }
+
+      .candle-body.down,
+      .candle-wick.down {
+        fill: rgba(248, 113, 113, 0.92);
+        stroke: rgba(248, 113, 113, 0.92);
+      }
+
+      .candle-body.flat,
+      .candle-wick.flat {
+        fill: rgba(96, 165, 250, 0.92);
+        stroke: rgba(96, 165, 250, 0.92);
+      }
+
+      .ohlc-stem {
+        stroke-width: 2;
+        stroke-linecap: round;
+      }
+
+      .ohlc-tick {
+        stroke-width: 2;
+        stroke-linecap: round;
+      }
+
+      .ohlc-stem.up,
+      .ohlc-tick.up {
+        stroke: rgba(34, 197, 94, 0.92);
+      }
+
+      .ohlc-stem.down,
+      .ohlc-tick.down {
+        stroke: rgba(248, 113, 113, 0.92);
+      }
+
+      .ohlc-stem.flat,
+      .ohlc-tick.flat {
+        stroke: rgba(96, 165, 250, 0.92);
+      }
+
       .chart-svg {
         width: 100%;
         height: 100%;
@@ -812,6 +948,8 @@
 
       @media (max-width: 1180px) {
         .stats,
+        .candlestick-grid,
+        .regime-top-charts,
         .regime-grid,
         .metric-grid,
         .tracker-grid,
@@ -847,37 +985,52 @@
       </section>
 
       <section class="grid explain-grid">
-        <article class="panel explain-card">
-          <h3 class="title-with-help">
-            How to read the score
-            <span class="info-icon" tabindex="0" data-tooltip="The entry score blends market regime plus top-contract execution quality. Higher is better, but it is not a guarantee of returns.">?</span>
-          </h3>
-          <p>
-            Think of `Entry Score` as a quick checklist. Higher scores mean the
-            volatility backdrop and the option itself both look cleaner.
-          </p>
+        <article class="panel explain-card" data-explain-card>
+          <button class="explain-toggle" type="button" data-explain-toggle>
+            <h3 class="title-with-help">
+              How to read the score
+              <span class="info-icon" tabindex="0" data-tooltip="The entry score blends market regime plus top-contract execution quality. Higher is better, but it is not a guarantee of returns.">?</span>
+            </h3>
+            <span class="explain-chevron">▾</span>
+          </button>
+          <div class="explain-body">
+            <p>
+              Think of `Entry Score` as a quick checklist. Higher scores mean the
+              volatility backdrop and the option itself both look cleaner.
+            </p>
+          </div>
         </article>
-        <article class="panel explain-card">
-          <h3 class="title-with-help">
-            What makes a setup good
-            <span class="info-icon" tabindex="0" data-tooltip="Average traders usually want lower extrinsic cost, tighter spreads, better liquidity, and a healthier vol curve.">?</span>
-          </h3>
-          <p>
-            Better setups usually have lower extrinsic cost, tighter spreads,
-            decent volume, cleaner trend structure in `SVXY`, and a curve that is not screaming
-            front-end stress.
-          </p>
+        <article class="panel explain-card" data-explain-card>
+          <button class="explain-toggle" type="button" data-explain-toggle>
+            <h3 class="title-with-help">
+              What makes a setup good
+              <span class="info-icon" tabindex="0" data-tooltip="Average traders usually want lower extrinsic cost, tighter spreads, better liquidity, and a healthier vol curve.">?</span>
+            </h3>
+            <span class="explain-chevron">▾</span>
+          </button>
+          <div class="explain-body">
+            <p>
+              Better setups usually have lower extrinsic cost, tighter spreads,
+              decent volume, cleaner trend structure in `SVXY`, and a curve that is not screaming
+              front-end stress.
+            </p>
+          </div>
         </article>
-        <article class="panel explain-card">
-          <h3 class="title-with-help">
-            What makes a setup dangerous
-            <span class="info-icon" tabindex="0" data-tooltip="Wide spreads, low liquidity, backwardation, or rising VVIX can mean poor execution and unstable short-vol conditions.">?</span>
-          </h3>
-          <p>
-            Be careful when spreads are wide, liquidity is thin, or the curve is
-            in backwardation. That usually means tougher fills and a shakier
-            short-vol regime.
-          </p>
+        <article class="panel explain-card" data-explain-card>
+          <button class="explain-toggle" type="button" data-explain-toggle>
+            <h3 class="title-with-help">
+              What makes a setup dangerous
+              <span class="info-icon" tabindex="0" data-tooltip="Wide spreads, low liquidity, backwardation, or rising VVIX can mean poor execution and unstable short-vol conditions.">?</span>
+            </h3>
+            <span class="explain-chevron">▾</span>
+          </button>
+          <div class="explain-body">
+            <p>
+              Be careful when spreads are wide, liquidity is thin, or the curve is
+              in backwardation. That usually means tougher fills and a shakier
+              short-vol regime.
+            </p>
+          </div>
         </article>
       </section>
 
@@ -962,6 +1115,11 @@
         </div>
         <div id="regime-panel" class="loading">Loading volatility regime...</div>
         <div class="footer" id="regime-reason"></div>
+        <div class="regime-top-charts">
+          <div id="regime-2d-chart" class="loading">Loading 2-day VIX candlesticks...</div>
+          <div id="regime-current-bar-chart" class="loading">Loading current-day VIX bar chart...</div>
+        </div>
+        <div id="regime-history-chart" class="loading" style="margin-top: 14px">Loading 2-day VIX and VIX3M overlay...</div>
       </section>
 
       <section class="grid columns" style="margin-top: 18px">
@@ -1152,6 +1310,18 @@
         return "bad";
       }
 
+      function setupExplainCards() {
+        document.querySelectorAll("[data-explain-toggle]").forEach((button) => {
+          if (button.dataset.bound === "true") return;
+          button.dataset.bound = "true";
+          button.addEventListener("click", () => {
+            const card = button.closest("[data-explain-card]");
+            if (!card) return;
+            card.classList.toggle("expanded");
+          });
+        });
+      }
+
       function renderFilters(filters) {
         document.getElementById("filters-panel").innerHTML = `
           <div class="filter-row">
@@ -1337,6 +1507,24 @@
             </div>
           </div>
         `;
+
+        const vixCurrentCandles = Array.isArray(regime?.intraday?.vix) ? regime.intraday.vix : [];
+        const vix2dCandles = Array.isArray(regime?.intraday?.vix_2d) ? regime.intraday.vix_2d : [];
+        const vix3m2dCandles = Array.isArray(regime?.intraday?.vix3m_2d) ? regime.intraday.vix3m_2d : [];
+
+        renderSingleCandlestickChart(
+          "regime-2d-chart",
+          "VIX",
+          "2 Day View | Last 2 trading days, 5 minute candles",
+          vix2dCandles,
+        );
+        renderSingleCandlestickChart(
+          "regime-current-bar-chart",
+          "VIX",
+          "Current Day | 5 minute candles",
+          vixCurrentCandles,
+        );
+        renderRegimeOverlayLineChart("regime-history-chart", vix2dCandles, vix3m2dCandles);
       }
 
       function renderSvxyTracker(tracker) {
@@ -1687,6 +1875,182 @@
           .join(" ");
       }
 
+      function formatIntradayLabel(candle, candles) {
+        if (!candle) return "";
+        return candle.date && candles.some((point) => point.date !== candle.date)
+          ? `${candle.date} ${candle.time || ""}`.trim()
+          : candle.time || "";
+      }
+
+      function renderSingleCandlestickChart(containerId, symbol, subtitle, candles) {
+        const container = document.getElementById(containerId);
+        if (!candles.length) {
+          container.className = "empty";
+          container.textContent = `No ${symbol.toLowerCase()} candlestick data available.`;
+          return;
+        }
+
+        container.className = "";
+        container.innerHTML = buildCandlestickCard(symbol, subtitle, candles);
+        const card = container.querySelector("[data-candlestick-card]");
+        if (card) setupCandlestickInteractions(card, candles);
+      }
+
+      function buildCandlestickCard(symbol, subtitle, candles) {
+        if (!candles.length) {
+          return `
+            <div class="candlestick-card empty">
+              <div class="candlestick-header">
+                <div class="candlestick-title">${escapeHtml(symbol)}</div>
+                <div class="candlestick-subtitle">${escapeHtml(subtitle)}</div>
+              </div>
+              No intraday candles available.
+            </div>
+          `;
+        }
+
+        const width = 760;
+        const height = 220;
+        const padding = 20;
+        const low = Math.min(...candles.map((candle) => candle.low));
+        const high = Math.max(...candles.map((candle) => candle.high));
+        const span = high - low || 1;
+        const bodyWidth = Math.max(((width - padding * 2) / Math.max(candles.length, 1)) * 0.55, 4);
+        const yFor = (value) => height - padding - ((value - low) / span) * (height - padding * 2);
+        const xFor = (index) =>
+          padding + ((index + 0.5) * (width - padding * 2)) / Math.max(candles.length, 1);
+
+        const gridLines = [0, 0.25, 0.5, 0.75, 1]
+          .map((ratio) => {
+            const y = padding + ratio * (height - padding * 2);
+            return `<line x1="${padding}" y1="${y}" x2="${width - padding}" y2="${y}" stroke="rgba(148,163,184,0.08)" />`;
+          })
+          .join("");
+
+        const candleMarkup = candles
+          .map((candle, index) => {
+            const x = xFor(index);
+            const openY = yFor(candle.open);
+            const closeY = yFor(candle.close);
+            const highY = yFor(candle.high);
+            const lowY = yFor(candle.low);
+            const top = Math.min(openY, closeY);
+            const bodyHeight = Math.max(Math.abs(openY - closeY), 2);
+            const direction =
+              candle.close > candle.open ? "up" : candle.close < candle.open ? "down" : "flat";
+
+            return `
+              <g data-candle-index="${index}">
+                <line class="candle-wick ${direction}" x1="${x}" y1="${highY}" x2="${x}" y2="${lowY}" />
+                <rect
+                  class="candle-body ${direction}"
+                  x="${x - bodyWidth / 2}"
+                  y="${top}"
+                  width="${bodyWidth}"
+                  height="${bodyHeight}"
+                  rx="1.5"
+                />
+              </g>
+            `;
+          })
+          .join("");
+
+        const labelCandles = [candles[0], candles[Math.floor(candles.length / 2)], candles[candles.length - 1]]
+          .filter(Boolean);
+        const labels = labelCandles
+          .map((candle, index) => {
+            const label = formatIntradayLabel(candle, candles);
+            const x = index === 0 ? padding : index === 1 ? width / 2 : width - padding;
+            return `<text x="${x}" y="${height - 2}" fill="#8ea0bc" font-size="11" text-anchor="${index === 0 ? "start" : index === 1 ? "middle" : "end"}">${escapeHtml(label)}</text>`;
+          })
+          .join("");
+
+        return `
+          <div class="candlestick-card" data-candlestick-card="true" data-symbol="${escapeHtml(symbol)}">
+            <div class="candlestick-header">
+              <div class="candlestick-title">${escapeHtml(symbol)}</div>
+              <div class="candlestick-subtitle">${escapeHtml(subtitle)}</div>
+            </div>
+            <div class="candlestick-shell">
+              <svg viewBox="0 0 ${width} ${height}" class="candlestick-svg" preserveAspectRatio="none">
+                ${gridLines}
+                <line x1="${padding}" y1="${padding}" x2="${padding}" y2="${height - padding}" stroke="rgba(255,255,255,0.12)" stroke-dasharray="4 4" style="opacity:0" data-candle-hover-line="true" />
+                ${candleMarkup}
+                ${labels}
+              </svg>
+              <div class="chart-tooltip" data-candle-tooltip="true"></div>
+            </div>
+          </div>
+        `;
+      }
+
+      function setupCandlestickInteractions(card, candles) {
+        if (!candles.length) return;
+
+        const svg = card.querySelector(".candlestick-svg");
+        const tooltip = card.querySelector("[data-candle-tooltip='true']");
+        const hoverLine = card.querySelector("[data-candle-hover-line='true']");
+        if (!svg || !tooltip || !hoverLine) return;
+
+        const width = 760;
+        const padding = 20;
+        const xFor = (index) =>
+          padding + ((index + 0.5) * (width - padding * 2)) / Math.max(candles.length, 1);
+
+        const renderTooltip = (index) => {
+          const safeIndex = Math.max(0, Math.min(index, candles.length - 1));
+          const candle = candles[safeIndex];
+          const x = xFor(safeIndex);
+          const label = formatIntradayLabel(candle, candles);
+
+          hoverLine.setAttribute("x1", String(x));
+          hoverLine.setAttribute("x2", String(x));
+          hoverLine.style.opacity = "1";
+
+          tooltip.innerHTML = `
+            <div class="tooltip-date">${escapeHtml(label)}</div>
+            <div class="tooltip-row"><span>Open</span><span>${formatNumber(candle.open, 2)}</span></div>
+            <div class="tooltip-row"><span>High</span><span>${formatNumber(candle.high, 2)}</span></div>
+            <div class="tooltip-row"><span>Low</span><span>${formatNumber(candle.low, 2)}</span></div>
+            <div class="tooltip-row"><span>Close</span><span>${formatNumber(candle.close, 2)}</span></div>
+          `;
+          tooltip.classList.add("visible");
+        };
+
+        renderTooltip(candles.length - 1);
+
+        svg.addEventListener("mousemove", (event) => {
+          const rect = svg.getBoundingClientRect();
+          const ratio = (event.clientX - rect.left) / rect.width;
+          const index = Math.floor(ratio * candles.length);
+          renderTooltip(index);
+        });
+
+        svg.addEventListener("mouseleave", () => {
+          renderTooltip(candles.length - 1);
+        });
+      }
+
+      function renderRegimeOverlayLineChart(containerId, vixCandles, vix3mCandles) {
+        const labelsSource = vixCandles.length >= vix3mCandles.length ? vixCandles : vix3mCandles;
+        renderChart(
+          containerId,
+          [
+            {
+              label: "VIX",
+              color: "#60a5fa",
+              values: vixCandles.map((candle) => candle.close),
+            },
+            {
+              label: "VIX3M",
+              color: "#22c55e",
+              values: vix3mCandles.map((candle) => candle.close),
+            },
+          ],
+          labelsSource.map((candle) => formatIntradayLabel(candle, labelsSource)),
+        );
+      }
+
       function renderChart(containerId, seriesList, labels) {
         const container = document.getElementById(containerId);
         const validSeries = seriesList.filter(
@@ -1943,6 +2307,12 @@
           document.getElementById("svxy-tracker-chart").textContent = "Could not build SVXY tracker.";
           document.getElementById("regime-panel").className = "error";
           document.getElementById("regime-panel").textContent = message;
+          document.getElementById("regime-history-chart").className = "error";
+          document.getElementById("regime-history-chart").textContent = "Could not build 2-day VIX and VIX3M overlay.";
+          document.getElementById("regime-2d-chart").className = "error";
+          document.getElementById("regime-2d-chart").textContent = "Could not build 2-day VIX candlesticks.";
+          document.getElementById("regime-current-bar-chart").className = "error";
+          document.getElementById("regime-current-bar-chart").textContent = "Could not build current-day VIX candlesticks.";
           document.getElementById("top-option-container").className = "error";
           document.getElementById("top-option-container").textContent = "Could not load best contract.";
           document.getElementById("best-spread-container").className = "error";
@@ -1963,6 +2333,7 @@
       }
 
       document.getElementById("refresh-button").addEventListener("click", loadDashboard);
+      setupExplainCards();
       renderSnapshotChart(loadSnapshots());
       loadDashboard();
     </script>
