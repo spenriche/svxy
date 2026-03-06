@@ -53,6 +53,20 @@ class RankedOption:
     replacement_discount: float
 
 
+@dataclass(slots=True)
+class BestCallSpread:
+    expiration: str
+    buy_strike: float
+    sell_strike: float
+    buy_mid_price: float
+    sell_mid_price: float
+    spread_cost: float
+    max_value: float
+    max_profit: float
+    max_return: float
+    candidate_count: int
+
+
 def _norm_cdf(value: float) -> float:
     return 0.5 * (1.0 + math.erf(value / math.sqrt(2.0)))
 
@@ -362,6 +376,72 @@ def _build_exception_reasons(
     return reasons
 
 
+def _build_best_call_spread(
+    *,
+    ticker: yf.Ticker,
+    spot_price: float,
+    best_option: RankedOption | None,
+) -> BestCallSpread | None:
+    if best_option is None:
+        return None
+
+    option_chain = ticker.option_chain(best_option.expiration)
+    calls_frame = option_chain.calls
+    candidates: list[BestCallSpread] = []
+
+    for raw_option in calls_frame.to_dict("records"):
+        strike = _coerce_float(raw_option.get("strike"))
+        bid = _coerce_float(raw_option.get("bid"))
+        ask = _coerce_float(raw_option.get("ask"))
+        if strike is None or bid is None or ask is None:
+            continue
+        if strike <= spot_price:
+            continue
+
+        sell_mid_price = (bid + ask) / 2.0
+        if sell_mid_price <= 0:
+            continue
+
+        spread_cost = best_option.mid_price - sell_mid_price
+        max_value = strike - best_option.strike
+        if spread_cost <= 0 or max_value <= 0:
+            continue
+
+        max_profit = max_value - spread_cost
+        if max_profit <= 0:
+            continue
+
+        max_return = max_profit / spread_cost
+        candidates.append(
+            BestCallSpread(
+                expiration=best_option.expiration,
+                buy_strike=best_option.strike,
+                sell_strike=_round(strike),
+                buy_mid_price=best_option.mid_price,
+                sell_mid_price=_round(sell_mid_price),
+                spread_cost=_round(spread_cost),
+                max_value=_round(max_value),
+                max_profit=_round(max_profit),
+                max_return=_round(max_return),
+                candidate_count=0,
+            )
+        )
+
+    if not candidates:
+        return None
+
+    candidates.sort(
+        key=lambda spread: (
+            -spread.max_return,
+            -spread.max_profit,
+            spread.spread_cost,
+        )
+    )
+    best_spread = candidates[0]
+    best_spread.candidate_count = len(candidates)
+    return best_spread
+
+
 def _calculate_entry_score(
     *,
     market_regime: dict[str, Any],
@@ -446,6 +526,11 @@ def scan_svxy_deep_itm_calls(
     top_option = qualified_options[0] if qualified_options else (
         exception_options[0][0] if exception_options else None
     )
+    best_call_spread = _build_best_call_spread(
+        ticker=ticker,
+        spot_price=spot_price,
+        best_option=top_option,
+    )
     entry_score = _calculate_entry_score(market_regime=market_regime, top_option=top_option)
     market_regime["entry_score"] = entry_score
     market_regime["ideal_entry"] = entry_score >= 75
@@ -490,6 +575,7 @@ def scan_svxy_deep_itm_calls(
         "candidate_count": len(qualified_options),
         "exception_candidate_count": len(exception_options),
         "top_options": top_options,
+        "best_call_spread": asdict(best_call_spread) if best_call_spread else None,
     }
 
 
@@ -524,6 +610,21 @@ def format_report(result: dict[str, Any]) -> str:
                     "",
                 ]
             )
+
+    best_call_spread = result.get("best_call_spread")
+    if best_call_spread:
+        lines.extend(
+            [
+                "Best Call Spread:",
+                f"Buy {best_call_spread['expiration']} {best_call_spread['buy_strike']} Call",
+                f"Sell {best_call_spread['expiration']} {best_call_spread['sell_strike']} Call",
+                f"Spread Cost: {best_call_spread['spread_cost']}",
+                f"Max Value: {best_call_spread['max_value']}",
+                f"Max Profit: {best_call_spread['max_profit']}",
+                f"Max Return: {best_call_spread['max_return']}",
+                "",
+            ]
+        )
 
     regime = result.get("market_regime", {})
     if regime.get("enabled"):

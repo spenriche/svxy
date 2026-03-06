@@ -548,6 +548,28 @@
         color: var(--muted);
       }
 
+      .stacked-panels {
+        display: grid;
+        gap: 14px;
+      }
+
+      .spread-card {
+        padding: 18px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(15, 23, 42, 0.88));
+        border: 1px solid rgba(34, 197, 94, 0.16);
+      }
+
+      .spread-card h3 {
+        margin: 0 0 6px;
+        font-size: 1.08rem;
+      }
+
+      .spread-card p {
+        margin: 0 0 16px;
+        color: var(--muted);
+      }
+
       .filters {
         display: grid;
         gap: 2px;
@@ -858,10 +880,13 @@
                 <span>Best Contract</span>
                 <span class="info-icon" tabindex="0" data-tooltip="This is the highest-ranked call after your scanner compares all eligible contracts by extrinsic cost per delta, capital efficiency, and delta.">?</span>
               </h2>
-              <p class="section-subtitle">Top-ranked call after filters and ranking logic</p>
+            <p class="section-subtitle">Top-ranked call plus the best same-expiration OTM call spread</p>
             </div>
           </div>
-          <div id="top-option-container" class="loading">Loading live option data...</div>
+          <div class="stacked-panels">
+            <div id="top-option-container" class="loading">Loading live option data...</div>
+            <div id="best-spread-container" class="loading">Building best call spread...</div>
+          </div>
         </article>
 
         <aside class="panel section">
@@ -999,7 +1024,7 @@
           </div>
           <div class="filter-row">
             <div class="filter-label label-with-help">
-              <span>ITM Range</span>
+              <span>Deep ITM Range</span>
               ${helpIcon("This is the primary deep in-the-money bucket. The scanner prefers calls that are already 40% to 60% in the money.")}
             </div>
             <div>${filters.strike_itm_percent[0]}%-${filters.strike_itm_percent[1]}%</div>
@@ -1250,6 +1275,65 @@
                 ${helpIcon("IV is the implied volatility embedded in the option price. Extrinsic per delta tells you how much non-intrinsic value you are paying for each unit of directional exposure.")}
               </div>
               <div class="metric-value">${formatPercent(option.implied_volatility, 2)} / ${formatNumber(option.extrinsic_per_delta, 4)}</div>
+            </div>
+          </div>
+        `;
+      }
+
+      function renderBestCallSpread(spread) {
+        const container = document.getElementById("best-spread-container");
+        if (!spread) {
+          container.className = "empty";
+          container.textContent = "No usable OTM call spread found for the selected best call.";
+          return;
+        }
+
+        container.className = "spread-card";
+        container.innerHTML = `
+          <h3>Best Call Spread</h3>
+          <p>Buy the best call and sell the best same-expiration OTM call to reduce cost and maximize spread return.</p>
+          <div class="metric-grid">
+            <div class="metric">
+              <div class="metric-label label-with-help">
+                <span>Buy Leg</span>
+                ${helpIcon("This is the long ITM call the scanner picked first.")}
+              </div>
+              <div class="metric-value">${escapeHtml(spread.expiration)} ${formatCurrency(spread.buy_strike)} @ ${formatCurrency(spread.buy_mid_price)}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label label-with-help">
+                <span>Sell Leg</span>
+                ${helpIcon("This is the OTM call from the same expiration that produced the highest return potential for the spread.")}
+              </div>
+              <div class="metric-value">${escapeHtml(spread.expiration)} ${formatCurrency(spread.sell_strike)} @ ${formatCurrency(spread.sell_mid_price)}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label label-with-help">
+                <span>Spread Cost</span>
+                ${helpIcon("Net debit paid for the spread: long call price minus short call price.")}
+              </div>
+              <div class="metric-value">${formatCurrency(spread.spread_cost)}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label label-with-help">
+                <span>Max Value</span>
+                ${helpIcon("Maximum possible value of the call spread at expiration if SVXY finishes above the short strike.")}
+              </div>
+              <div class="metric-value">${formatCurrency(spread.max_value)}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label label-with-help">
+                <span>Max Profit</span>
+                ${helpIcon("Maximum possible profit at expiration: max value minus spread cost.")}
+              </div>
+              <div class="metric-value">${formatCurrency(spread.max_profit)}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label label-with-help">
+                <span>Max Return</span>
+                ${helpIcon("Maximum profit divided by spread cost. Higher means more payoff relative to capital at risk.")}
+              </div>
+              <div class="metric-value">${formatPercent(spread.max_return, 2)}</div>
             </div>
           </div>
         `;
@@ -1519,6 +1603,7 @@
           renderFilters(data.filters || {});
           renderRegime(data.market_regime || {});
           renderTopOption(topOption);
+          renderBestCallSpread(data.best_call_spread || null);
           renderTable(data.top_options || []);
           renderMarketHistory(data.market_regime || {});
           renderSnapshotChart(persistSnapshot(data));
@@ -1528,6 +1613,8 @@
           document.getElementById("regime-panel").textContent = message;
           document.getElementById("top-option-container").className = "error";
           document.getElementById("top-option-container").textContent = "Could not load best contract.";
+          document.getElementById("best-spread-container").className = "error";
+          document.getElementById("best-spread-container").textContent = "Could not build best call spread.";
           document.getElementById("table-container").className = "error";
           document.getElementById("table-container").textContent = "Could not render rankings.";
           document.getElementById("market-history-chart").className = "error";
