@@ -3,20 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SVXY Deep ITM Dashboard</title>
+    <title>SVXY Volatility Dashboard</title>
     <style>
       :root {
         color-scheme: dark;
-        --bg: #0b1020;
-        --panel: rgba(15, 23, 42, 0.82);
-        --panel-border: rgba(148, 163, 184, 0.16);
+        --bg: #07101f;
+        --panel: rgba(15, 23, 42, 0.84);
+        --panel-border: rgba(148, 163, 184, 0.14);
         --text: #e5eefc;
-        --muted: #93a4bf;
-        --accent: #60a5fa;
-        --accent-2: #22c55e;
-        --danger: #f87171;
-        --warning: #fbbf24;
-        --shadow: 0 24px 80px rgba(2, 6, 23, 0.45);
+        --muted: #8ea0bc;
+        --line: rgba(148, 163, 184, 0.1);
+        --blue: #60a5fa;
+        --green: #22c55e;
+        --red: #f87171;
+        --amber: #fbbf24;
+        --violet: #a78bfa;
+        --shadow: 0 28px 90px rgba(2, 6, 23, 0.45);
       }
 
       * {
@@ -29,72 +31,101 @@
           Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
           "Segoe UI", sans-serif;
         background:
-          radial-gradient(circle at top, rgba(96, 165, 250, 0.18), transparent 30%),
-          linear-gradient(180deg, #020617 0%, #0b1020 100%);
+          radial-gradient(circle at top, rgba(96, 165, 250, 0.16), transparent 32%),
+          linear-gradient(180deg, #020617 0%, #07101f 100%);
         color: var(--text);
       }
 
       .container {
-        width: min(1240px, calc(100% - 32px));
+        width: min(1360px, calc(100% - 28px));
         margin: 0 auto;
-        padding: 32px 0 56px;
+        padding: 28px 0 52px;
+      }
+
+      .hero,
+      .section-header,
+      .card-header,
+      .filter-row,
+      .legend {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
       }
 
       .hero {
-        display: flex;
-        justify-content: space-between;
-        gap: 20px;
         align-items: flex-start;
-        margin-bottom: 24px;
+        margin-bottom: 18px;
       }
 
       .hero h1 {
         margin: 0 0 10px;
-        font-size: clamp(2rem, 4vw, 3.2rem);
-        line-height: 1;
+        font-size: clamp(2rem, 4vw, 3.1rem);
         letter-spacing: -0.04em;
+        line-height: 0.98;
+      }
+
+      .hero p,
+      .section-subtitle,
+      .stat-note,
+      .filter-label,
+      .muted {
+        color: var(--muted);
       }
 
       .hero p {
         margin: 0;
-        max-width: 760px;
-        color: var(--muted);
-        font-size: 0.98rem;
+        max-width: 840px;
       }
 
       .hero-actions {
         display: flex;
-        gap: 12px;
-        align-items: center;
+        gap: 10px;
         flex-wrap: wrap;
+        align-items: center;
       }
 
-      button {
-        border: 0;
-        background: linear-gradient(135deg, #2563eb, #60a5fa);
-        color: white;
-        padding: 12px 16px;
-        border-radius: 12px;
-        font-size: 0.95rem;
-        font-weight: 600;
-        cursor: pointer;
-        box-shadow: 0 10px 30px rgba(37, 99, 235, 0.35);
-      }
-
-      button:hover {
-        filter: brightness(1.06);
-      }
-
-      .pill {
+      .pill,
+      .badge {
         display: inline-flex;
         align-items: center;
         gap: 8px;
         border-radius: 999px;
         padding: 8px 12px;
-        background: rgba(148, 163, 184, 0.12);
         border: 1px solid rgba(148, 163, 184, 0.16);
-        color: var(--muted);
-        font-size: 0.86rem;
+        background: rgba(148, 163, 184, 0.08);
+        font-size: 0.84rem;
+      }
+
+      .badge.good {
+        background: rgba(34, 197, 94, 0.15);
+        color: #86efac;
+      }
+
+      .badge.bad {
+        background: rgba(248, 113, 113, 0.15);
+        color: #fca5a5;
+      }
+
+      .badge.warn {
+        background: rgba(251, 191, 36, 0.15);
+        color: #fcd34d;
+      }
+
+      button {
+        border: 0;
+        color: white;
+        cursor: pointer;
+        padding: 12px 16px;
+        border-radius: 12px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #2563eb, #60a5fa);
+        box-shadow: 0 10px 30px rgba(37, 99, 235, 0.28);
+      }
+
+      button:disabled {
+        opacity: 0.7;
+        cursor: progress;
       }
 
       .grid {
@@ -103,8 +134,18 @@
       }
 
       .stats {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(6, minmax(0, 1fr));
         margin-bottom: 18px;
+      }
+
+      .columns {
+        grid-template-columns: 1.2fr 0.8fr;
+        align-items: start;
+      }
+
+      .history-grid {
+        grid-template-columns: 1fr 1fr;
+        margin-top: 18px;
       }
 
       .panel {
@@ -115,100 +156,110 @@
         backdrop-filter: blur(10px);
       }
 
+      .section,
       .stat-card {
         padding: 20px;
       }
 
       .stat-label {
         color: var(--muted);
-        font-size: 0.85rem;
+        font-size: 0.83rem;
         margin-bottom: 10px;
       }
 
       .stat-value {
-        font-size: clamp(1.5rem, 2.4vw, 2.2rem);
-        font-weight: 700;
+        font-size: clamp(1.35rem, 2.1vw, 2rem);
         letter-spacing: -0.03em;
+        font-weight: 800;
       }
 
       .stat-note {
         margin-top: 8px;
-        color: var(--muted);
-        font-size: 0.86rem;
+        font-size: 0.82rem;
       }
 
-      .layout {
-        grid-template-columns: 1.15fr 0.85fr;
-        align-items: start;
-      }
-
-      .section {
-        padding: 22px;
-      }
-
-      .section h2 {
-        margin: 0 0 14px;
-        font-size: 1.05rem;
+      .section h2,
+      .card-title {
+        margin: 0 0 6px;
+        font-size: 1.02rem;
         letter-spacing: -0.02em;
       }
 
-      .section-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 14px;
-      }
-
       .section-subtitle {
-        color: var(--muted);
-        font-size: 0.9rem;
         margin: 0;
+        font-size: 0.9rem;
       }
 
-      .top-card {
-        padding: 20px;
-        border-radius: 18px;
-        background: linear-gradient(
-          135deg,
-          rgba(37, 99, 235, 0.18),
-          rgba(15, 23, 42, 0.85)
-        );
-        border: 1px solid rgba(96, 165, 250, 0.2);
-      }
-
-      .top-card h3 {
-        margin: 0 0 4px;
-        font-size: 1.1rem;
-      }
-
-      .top-card p {
-        margin: 0 0 18px;
-        color: var(--muted);
-      }
-
+      .regime-grid,
       .metric-grid {
         display: grid;
         gap: 12px;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
+      .regime-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .metric-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .mini-card,
+      .metric,
+      .chart-card {
+        border-radius: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.1);
+        background: rgba(2, 6, 23, 0.26);
+      }
+
+      .mini-card,
       .metric {
-        padding: 12px;
-        border-radius: 14px;
-        background: rgba(2, 6, 23, 0.3);
-        border: 1px solid rgba(148, 163, 184, 0.12);
+        padding: 14px;
       }
 
+      .mini-label,
       .metric-label {
-        font-size: 0.78rem;
         color: var(--muted);
+        font-size: 0.78rem;
         margin-bottom: 8px;
       }
 
+      .mini-value,
       .metric-value {
+        font-size: 1.02rem;
+        font-weight: 750;
+      }
+
+      .top-card {
+        padding: 18px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(15, 23, 42, 0.9));
+        border: 1px solid rgba(96, 165, 250, 0.18);
+      }
+
+      .top-card h3 {
+        margin: 0 0 6px;
         font-size: 1.08rem;
-        font-weight: 700;
+      }
+
+      .top-card p {
+        margin: 0 0 16px;
+        color: var(--muted);
+      }
+
+      .filters {
+        display: grid;
+        gap: 2px;
+      }
+
+      .filter-row {
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .filter-row:last-child {
+        border-bottom: 0;
       }
 
       .table-wrap {
@@ -223,19 +274,18 @@
       th,
       td {
         text-align: left;
-        padding: 13px 14px;
-        border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--line);
         white-space: nowrap;
       }
 
       th {
+        font-size: 0.78rem;
         color: var(--muted);
-        font-size: 0.8rem;
-        font-weight: 600;
       }
 
       td {
-        font-size: 0.92rem;
+        font-size: 0.9rem;
       }
 
       tr:last-child td {
@@ -250,56 +300,57 @@
         border-radius: 999px;
         background: rgba(96, 165, 250, 0.14);
         color: #bfdbfe;
-        font-weight: 700;
+        font-weight: 800;
       }
 
-      .badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 12px;
-        border-radius: 999px;
-        font-size: 0.84rem;
-        font-weight: 700;
-      }
-
-      .badge.good {
-        background: rgba(34, 197, 94, 0.16);
+      .tight {
         color: #86efac;
       }
 
-      .badge.bad {
-        background: rgba(248, 113, 113, 0.16);
+      .wide {
         color: #fca5a5;
       }
 
-      .filters {
-        display: grid;
-        gap: 12px;
+      .chart-card {
+        padding: 14px;
       }
 
-      .filter-row {
-        display: flex;
-        justify-content: space-between;
-        gap: 16px;
-        padding: 12px 0;
-        border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+      .chart-shell {
+        height: 250px;
       }
 
-      .filter-row:last-child {
-        border-bottom: 0;
+      .chart-svg {
+        width: 100%;
+        height: 100%;
+        display: block;
       }
 
-      .filter-label {
+      .legend {
+        flex-wrap: wrap;
+        margin-top: 12px;
+        justify-content: flex-start;
+      }
+
+      .legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
         color: var(--muted);
+        font-size: 0.82rem;
+      }
+
+      .legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
       }
 
       .loading,
       .error,
       .empty {
-        padding: 24px;
+        padding: 22px;
         border-radius: 18px;
-        font-size: 0.96rem;
+        font-size: 0.95rem;
       }
 
       .loading {
@@ -318,24 +369,22 @@
       }
 
       .footer {
-        margin-top: 18px;
+        margin-top: 14px;
         color: var(--muted);
         font-size: 0.84rem;
       }
 
-      @media (max-width: 980px) {
+      @media (max-width: 1180px) {
         .stats,
-        .layout,
-        .metric-grid {
+        .regime-grid,
+        .metric-grid,
+        .columns,
+        .history-grid {
           grid-template-columns: 1fr;
         }
 
         .hero {
           flex-direction: column;
-        }
-
-        .hero-actions {
-          width: 100%;
         }
       }
     </style>
@@ -345,11 +394,11 @@
       <section class="hero">
         <div>
           <div class="pill">SVXY Deep ITM Call Scanner</div>
-          <h1>Single-page volatility options dashboard</h1>
+          <h1>Volatility regime + options execution dashboard</h1>
           <p>
-            Live ranking of deep in-the-money SVXY calls using your efficiency
-            model: minimize extrinsic value paid per unit of delta while
-            maximizing capital efficiency.
+            This now ranks deep ITM `SVXY` calls with liquidity gates, tracks
+            `VIX` / `VIX3M` / `VVIX`, labels curve state, and keeps a rolling
+            snapshot chart in the browser.
           </p>
         </div>
         <div class="hero-actions">
@@ -362,12 +411,22 @@
         <article class="panel stat-card">
           <div class="stat-label">SVXY Spot</div>
           <div class="stat-value" id="spot-price">--</div>
-          <div class="stat-note">Underlying price used for the scan</div>
+          <div class="stat-note">Underlying used for strike filtering</div>
         </article>
         <article class="panel stat-card">
           <div class="stat-label">Qualified Contracts</div>
           <div class="stat-value" id="candidate-count">--</div>
-          <div class="stat-note">After expiry and strike filters</div>
+          <div class="stat-note">After expiry + liquidity filters</div>
+        </article>
+        <article class="panel stat-card">
+          <div class="stat-label">Entry Score</div>
+          <div class="stat-value" id="entry-score">--</div>
+          <div class="stat-note">Regime + best-contract quality score</div>
+        </article>
+        <article class="panel stat-card">
+          <div class="stat-label">Curve State</div>
+          <div class="stat-value" id="curve-state">--</div>
+          <div class="stat-note">Front vs 3M vol structure</div>
         </article>
         <article class="panel stat-card">
           <div class="stat-label">Best Extrinsic / Delta</div>
@@ -375,22 +434,31 @@
           <div class="stat-note">Lower is better</div>
         </article>
         <article class="panel stat-card">
-          <div class="stat-label">Best Capital Efficiency</div>
-          <div class="stat-value" id="best-capital-efficiency">--</div>
-          <div class="stat-note">Higher is better</div>
+          <div class="stat-label">Best Spread %</div>
+          <div class="stat-value" id="best-spread-pct">--</div>
+          <div class="stat-note">Execution quality on top contract</div>
         </article>
       </section>
 
-      <section class="grid layout">
+      <section class="panel section">
+        <div class="section-header">
+          <div>
+            <h2>Regime Panel</h2>
+            <p class="section-subtitle">Use the curve, vol-of-vol, and entry score together</p>
+          </div>
+          <div id="regime-badge"></div>
+        </div>
+        <div id="regime-panel" class="loading">Loading volatility regime...</div>
+        <div class="footer" id="regime-reason"></div>
+      </section>
+
+      <section class="grid columns" style="margin-top: 18px">
         <article class="panel section">
           <div class="section-header">
             <div>
               <h2>Best Contract</h2>
-              <p class="section-subtitle">
-                Top-ranked call after applying your full scoring logic
-              </p>
+              <p class="section-subtitle">Top-ranked call after filters and ranking logic</p>
             </div>
-            <div id="regime-badge"></div>
           </div>
           <div id="top-option-container" class="loading">Loading live option data...</div>
         </article>
@@ -398,7 +466,6 @@
         <aside class="panel section">
           <h2>Scan Filters</h2>
           <div class="filters" id="filters-panel"></div>
-          <div class="footer" id="regime-reason"></div>
         </aside>
       </section>
 
@@ -406,12 +473,32 @@
         <div class="section-header">
           <div>
             <h2>Top 5 Contracts</h2>
-            <p class="section-subtitle">
-              Sorted by extrinsic per delta, capital efficiency, then delta
-            </p>
+            <p class="section-subtitle">Now includes liquidity, spread, and break-even context</p>
           </div>
         </div>
         <div id="table-container" class="loading">Building rankings table...</div>
+      </section>
+
+      <section class="grid history-grid">
+        <article class="panel section">
+          <div class="section-header">
+            <div>
+              <h2>Volatility History</h2>
+              <p class="section-subtitle">Last 30 daily closes for `VIX`, `VIX3M`, and `VVIX`</p>
+            </div>
+          </div>
+          <div id="market-history-chart" class="loading">Loading volatility history...</div>
+        </article>
+
+        <article class="panel section">
+          <div class="section-header">
+            <div>
+              <h2>Scan Snapshots</h2>
+              <p class="section-subtitle">Rolling browser-stored history of best setup quality</p>
+            </div>
+          </div>
+          <div id="snapshot-chart" class="loading">Building snapshot history...</div>
+        </article>
       </section>
     </div>
 
@@ -423,10 +510,7 @@
         maximumFractionDigits: 2,
       });
 
-      const numberFormatter = new Intl.NumberFormat("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 4,
-      });
+      const SNAPSHOT_STORAGE_KEY = "svxy-dashboard-snapshots-v1";
 
       function formatCurrency(value) {
         if (typeof value !== "number" || Number.isNaN(value)) return "--";
@@ -441,6 +525,11 @@
         }).format(value);
       }
 
+      function formatPercent(value, digits = 2) {
+        if (typeof value !== "number" || Number.isNaN(value)) return "--";
+        return `${formatNumber(value * 100, digits)}%`;
+      }
+
       function formatTimestamp(value) {
         if (!value) return "Unknown";
         const timestamp = new Date(value);
@@ -448,9 +537,22 @@
         return timestamp.toLocaleString();
       }
 
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;");
+      }
+
+      function getCurveBadge(curveState) {
+        if (curveState === "contango") return `<span class="badge good">Contango</span>`;
+        if (curveState === "backwardation") return `<span class="badge bad">Backwardation</span>`;
+        return `<span class="badge warn">Flat</span>`;
+      }
+
       function renderFilters(filters) {
-        const panel = document.getElementById("filters-panel");
-        panel.innerHTML = `
+        document.getElementById("filters-panel").innerHTML = `
           <div class="filter-row">
             <div class="filter-label">Expiry Window</div>
             <div>${filters.expiration_window_months[0]}-${filters.expiration_window_months[1]} months</div>
@@ -464,49 +566,106 @@
             <div>${formatCurrency(filters.lower_bound_strike)} to ${formatCurrency(filters.upper_bound_strike)}</div>
           </div>
           <div class="filter-row">
-            <div class="filter-label">Ranking</div>
-            <div>Extrinsic/Delta, Capital Efficiency, Delta</div>
+            <div class="filter-label">Min Open Interest</div>
+            <div>${filters.min_open_interest}</div>
+          </div>
+          <div class="filter-row">
+            <div class="filter-label">Min Volume</div>
+            <div>${filters.min_volume}</div>
+          </div>
+          <div class="filter-row">
+            <div class="filter-label">Max Spread %</div>
+            <div>${formatPercent(filters.max_spread_pct, 2)}</div>
+          </div>
+        `;
+      }
+
+      function renderRegime(regime) {
+        const ideal = Boolean(regime?.ideal_entry);
+        document.getElementById("regime-badge").innerHTML = ideal
+          ? `<span class="badge good">Ideal entry</span>`
+          : `<span class="badge bad">Not ideal</span>`;
+
+        document.getElementById("curve-state").textContent = regime?.curve_state || "--";
+        document.getElementById("entry-score").textContent = regime?.entry_score ?? "--";
+        document.getElementById("regime-reason").textContent = regime?.reason || "Regime unavailable.";
+
+        document.getElementById("regime-panel").className = "regime-grid";
+        document.getElementById("regime-panel").innerHTML = `
+          <div class="mini-card">
+            <div class="mini-label">VIX</div>
+            <div class="mini-value">${formatNumber(regime?.latest_vix, 2)}</div>
+            <div class="muted">Prev ${formatNumber(regime?.previous_vix, 2)}</div>
+          </div>
+          <div class="mini-card">
+            <div class="mini-label">VIX3M</div>
+            <div class="mini-value">${formatNumber(regime?.latest_vix3m, 2)}</div>
+            <div class="muted">Prev ${formatNumber(regime?.previous_vix3m, 2)}</div>
+          </div>
+          <div class="mini-card">
+            <div class="mini-label">VVIX</div>
+            <div class="mini-value">${formatNumber(regime?.latest_vvix, 2)}</div>
+            <div class="muted">Prev ${formatNumber(regime?.previous_vvix, 2)}</div>
+          </div>
+          <div class="mini-card">
+            <div class="mini-label">Term Structure</div>
+            <div class="mini-value">${formatNumber(regime?.term_spread, 2)}</div>
+            <div class="muted">
+              ${getCurveBadge(regime?.curve_state)}
+              <span style="margin-left: 8px">VIX / VIX3M ${formatNumber(regime?.term_ratio, 3)}</span>
+            </div>
           </div>
         `;
       }
 
       function renderTopOption(option) {
         const container = document.getElementById("top-option-container");
-
         if (!option) {
           container.className = "empty";
-          container.textContent = "No contracts currently match the scan filters.";
+          container.textContent = "No contracts currently match the filters.";
           return;
         }
 
         container.className = "top-card";
         container.innerHTML = `
-          <h3>${option.expiration} ${formatCurrency(option.strike)} Call</h3>
-          <p>Lowest extrinsic cost per unit of delta in the eligible SVXY chain.</p>
+          <h3>${escapeHtml(option.expiration)} ${formatCurrency(option.strike)} Call</h3>
+          <p>Lowest extrinsic per delta among liquid contracts inside the target moneyness window.</p>
           <div class="metric-grid">
             <div class="metric">
-              <div class="metric-label">Mid Price</div>
-              <div class="metric-value">${formatCurrency(option.mid_price)}</div>
+              <div class="metric-label">Mid / Break-even</div>
+              <div class="metric-value">${formatCurrency(option.mid_price)} / ${formatCurrency(option.break_even)}</div>
             </div>
             <div class="metric">
-              <div class="metric-label">Delta</div>
-              <div class="metric-value">${formatNumber(option.delta, 4)}</div>
+              <div class="metric-label">Delta / Capital Efficiency</div>
+              <div class="metric-value">${formatNumber(option.delta, 4)} / ${formatNumber(option.capital_efficiency, 4)}</div>
             </div>
             <div class="metric">
-              <div class="metric-label">Intrinsic Value</div>
-              <div class="metric-value">${formatCurrency(option.intrinsic_value)}</div>
+              <div class="metric-label">Intrinsic / Extrinsic</div>
+              <div class="metric-value">${formatCurrency(option.intrinsic_value)} / ${formatCurrency(option.extrinsic_value)}</div>
             </div>
             <div class="metric">
-              <div class="metric-label">Extrinsic Value</div>
-              <div class="metric-value">${formatCurrency(option.extrinsic_value)}</div>
+              <div class="metric-label">Spread / Spread %</div>
+              <div class="metric-value">${formatCurrency(option.bid_ask_spread)} / ${formatPercent(option.spread_pct, 2)}</div>
             </div>
             <div class="metric">
-              <div class="metric-label">Extrinsic / Delta</div>
-              <div class="metric-value">${formatNumber(option.extrinsic_per_delta, 4)}</div>
+              <div class="metric-label">Volume / Open Interest</div>
+              <div class="metric-value">${option.volume} / ${option.open_interest}</div>
             </div>
             <div class="metric">
-              <div class="metric-label">Capital Efficiency</div>
-              <div class="metric-value">${formatNumber(option.capital_efficiency, 4)}</div>
+              <div class="metric-label">Days / Extrinsic per Day</div>
+              <div class="metric-value">${option.days_to_expiry} / ${formatCurrency(option.extrinsic_per_day)}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Bid / Ask</div>
+              <div class="metric-value">${formatCurrency(option.bid)} / ${formatCurrency(option.ask)}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Replacement Discount</div>
+              <div class="metric-value">${formatCurrency(option.replacement_discount)}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">IV / Extrinsic per Delta</div>
+              <div class="metric-value">${formatPercent(option.implied_volatility, 2)} / ${formatNumber(option.extrinsic_per_delta, 4)}</div>
             </div>
           </div>
         `;
@@ -514,7 +673,6 @@
 
       function renderTable(options) {
         const container = document.getElementById("table-container");
-
         if (!options.length) {
           container.className = "empty";
           container.textContent = "No ranked contracts to display.";
@@ -531,51 +689,202 @@
                 <th>Strike</th>
                 <th>Mid</th>
                 <th>Delta</th>
-                <th>Intrinsic</th>
-                <th>Extrinsic</th>
                 <th>Extrinsic / Delta</th>
-                <th>Capital Efficiency</th>
+                <th>Cap Eff</th>
+                <th>Spread %</th>
+                <th>Volume</th>
+                <th>OI</th>
+                <th>Break-even</th>
+                <th>Extrinsic / Day</th>
               </tr>
             </thead>
             <tbody>
-              ${options
-                .map(
-                  (option, index) => `
-                    <tr>
-                      <td><span class="rank">${index + 1}</span></td>
-                      <td>${option.expiration}</td>
-                      <td>${formatCurrency(option.strike)}</td>
-                      <td>${formatCurrency(option.mid_price)}</td>
-                      <td>${formatNumber(option.delta, 4)}</td>
-                      <td>${formatCurrency(option.intrinsic_value)}</td>
-                      <td>${formatCurrency(option.extrinsic_value)}</td>
-                      <td>${formatNumber(option.extrinsic_per_delta, 4)}</td>
-                      <td>${formatNumber(option.capital_efficiency, 4)}</td>
-                    </tr>
-                  `,
-                )
-                .join("")}
+              ${options.map((option, index) => `
+                <tr>
+                  <td><span class="rank">${index + 1}</span></td>
+                  <td>${escapeHtml(option.expiration)}</td>
+                  <td>${formatCurrency(option.strike)}</td>
+                  <td>${formatCurrency(option.mid_price)}</td>
+                  <td>${formatNumber(option.delta, 4)}</td>
+                  <td>${formatNumber(option.extrinsic_per_delta, 4)}</td>
+                  <td>${formatNumber(option.capital_efficiency, 4)}</td>
+                  <td class="${option.spread_pct <= 0.05 ? "tight" : "wide"}">${formatPercent(option.spread_pct, 2)}</td>
+                  <td>${option.volume}</td>
+                  <td>${option.open_interest}</td>
+                  <td>${formatCurrency(option.break_even)}</td>
+                  <td>${formatCurrency(option.extrinsic_per_day)}</td>
+                </tr>
+              `).join("")}
             </tbody>
           </table>
         `;
       }
 
-      function renderRegime(regime) {
-        const badge = document.getElementById("regime-badge");
-        const reason = document.getElementById("regime-reason");
-        const ideal = Boolean(regime && regime.ideal_entry);
+      function buildPolylinePoints(values, width, height, padding) {
+        if (!values.length) return "";
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const span = max - min || 1;
+        return values
+          .map((value, index) => {
+            const x = padding + (index * (width - padding * 2)) / Math.max(values.length - 1, 1);
+            const y = height - padding - ((value - min) / span) * (height - padding * 2);
+            return `${x},${y}`;
+          })
+          .join(" ");
+      }
 
-        badge.innerHTML = `
-          <span class="badge ${ideal ? "good" : "bad"}">
-            ${ideal ? "Ideal entry" : "Regime not ideal"}
-          </span>
+      function renderChart(containerId, seriesList, labels) {
+        const container = document.getElementById(containerId);
+        const validSeries = seriesList.filter((series) => Array.isArray(series.values) && series.values.length);
+
+        if (!validSeries.length) {
+          container.className = "empty";
+          container.textContent = "No chart data available.";
+          return;
+        }
+
+        const width = 760;
+        const height = 250;
+        const padding = 22;
+        const allValues = validSeries.flatMap((series) => series.values);
+        const min = Math.min(...allValues);
+        const max = Math.max(...allValues);
+        const yTop = max + (max - min || 1) * 0.05;
+        const yBottom = min - (max - min || 1) * 0.05;
+        const span = yTop - yBottom || 1;
+
+        const pathFor = (values) =>
+          values
+            .map((value, index) => {
+              const x = padding + (index * (width - padding * 2)) / Math.max(values.length - 1, 1);
+              const y = height - padding - ((value - yBottom) / span) * (height - padding * 2);
+              return `${index === 0 ? "M" : "L"}${x} ${y}`;
+            })
+            .join(" ");
+
+        const gridLines = [0, 0.25, 0.5, 0.75, 1]
+          .map((ratio) => {
+            const y = padding + ratio * (height - padding * 2);
+            return `<line x1="${padding}" y1="${y}" x2="${width - padding}" y2="${y}" stroke="rgba(148,163,184,0.08)" />`;
+          })
+          .join("");
+
+        const xLabels = [labels[0], labels[Math.floor(labels.length / 2)], labels[labels.length - 1]]
+          .filter(Boolean)
+          .map((label, index) => {
+            const x = index === 0 ? padding : index === 1 ? width / 2 : width - padding;
+            return `<text x="${x}" y="${height - 2}" fill="#8ea0bc" font-size="11" text-anchor="${index === 0 ? "start" : index === 1 ? "middle" : "end"}">${escapeHtml(label)}</text>`;
+          })
+          .join("");
+
+        container.className = "chart-card";
+        container.innerHTML = `
+          <div class="chart-shell">
+            <svg viewBox="0 0 ${width} ${height}" class="chart-svg" preserveAspectRatio="none">
+              ${gridLines}
+              ${validSeries.map((series) => `
+                <path
+                  d="${pathFor(series.values)}"
+                  fill="none"
+                  stroke="${series.color}"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              `).join("")}
+              ${xLabels}
+            </svg>
+          </div>
+          <div class="legend">
+            ${validSeries.map((series) => `
+              <div class="legend-item">
+                <span class="legend-dot" style="background:${series.color}"></span>
+                <span>${escapeHtml(series.label)}</span>
+              </div>
+            `).join("")}
+          </div>
         `;
+      }
 
-        const latest = regime && typeof regime.latest_vix === "number"
-          ? ` Latest VIX: ${formatNumber(regime.latest_vix, 2)}.`
-          : "";
+      function loadSnapshots() {
+        try {
+          return JSON.parse(localStorage.getItem(SNAPSHOT_STORAGE_KEY) || "[]");
+        } catch {
+          return [];
+        }
+      }
 
-        reason.textContent = `${regime?.reason || "Market regime unavailable."}${latest}`;
+      function persistSnapshot(data) {
+        const topOption = data.top_options?.[0];
+        const nextSnapshot = {
+          generated_at: data.generated_at,
+          entry_score: data.market_regime?.entry_score ?? 0,
+          best_extrinsic_per_delta: topOption?.extrinsic_per_delta ?? null,
+          best_capital_efficiency: topOption?.capital_efficiency ?? null,
+        };
+
+        const snapshots = loadSnapshots();
+        const deduped = snapshots.filter((snapshot) => snapshot.generated_at !== nextSnapshot.generated_at);
+        deduped.push(nextSnapshot);
+        localStorage.setItem(SNAPSHOT_STORAGE_KEY, JSON.stringify(deduped.slice(-30)));
+        return deduped.slice(-30);
+      }
+
+      function renderSnapshotChart(snapshots) {
+        if (!snapshots.length) {
+          const container = document.getElementById("snapshot-chart");
+          container.className = "empty";
+          container.textContent = "Need at least one scan to build snapshot history.";
+          return;
+        }
+
+        renderChart(
+          "snapshot-chart",
+          [
+            {
+              label: "Entry Score",
+              color: "#60a5fa",
+              values: snapshots.map((snapshot) => snapshot.entry_score ?? 0),
+            },
+            {
+              label: "Best Extrinsic / Delta",
+              color: "#22c55e",
+              values: snapshots.map((snapshot) => snapshot.best_extrinsic_per_delta ?? 0),
+            },
+            {
+              label: "Best Capital Efficiency",
+              color: "#a78bfa",
+              values: snapshots.map((snapshot) => snapshot.best_capital_efficiency ?? 0),
+            },
+          ],
+          snapshots.map((snapshot) => new Date(snapshot.generated_at).toLocaleDateString()),
+        );
+      }
+
+      function renderMarketHistory(regime) {
+        const history = Array.isArray(regime?.history) ? regime.history : [];
+        renderChart(
+          "market-history-chart",
+          [
+            {
+              label: "VIX",
+              color: "#60a5fa",
+              values: history.map((point) => point.vix),
+            },
+            {
+              label: "VIX3M",
+              color: "#22c55e",
+              values: history.map((point) => point.vix3m),
+            },
+            {
+              label: "VVIX",
+              color: "#fbbf24",
+              values: history.map((point) => point.vvix),
+            },
+          ],
+          history.map((point) => point.date),
+        );
       }
 
       async function loadDashboard() {
@@ -588,33 +897,37 @@
             headers: { Accept: "application/json" },
           });
           const data = await response.json();
-
-          if (!response.ok) {
-            throw new Error(data.error || "Failed to load scan.");
-          }
+          if (!response.ok) throw new Error(data.error || "Failed to load scan.");
 
           const topOption = data.top_options?.[0] || null;
-
           document.getElementById("spot-price").textContent = formatCurrency(data.svxy_price);
           document.getElementById("candidate-count").textContent = String(data.candidate_count ?? 0);
           document.getElementById("best-extrinsic").textContent = topOption
             ? formatNumber(topOption.extrinsic_per_delta, 4)
             : "--";
-          document.getElementById("best-capital-efficiency").textContent = topOption
-            ? formatNumber(topOption.capital_efficiency, 4)
+          document.getElementById("best-spread-pct").textContent = topOption
+            ? formatPercent(topOption.spread_pct, 2)
             : "--";
           document.getElementById("updated-pill").textContent = `Updated ${formatTimestamp(data.generated_at)}`;
 
-          renderFilters(data.filters);
+          renderFilters(data.filters || {});
+          renderRegime(data.market_regime || {});
           renderTopOption(topOption);
           renderTable(data.top_options || []);
-          renderRegime(data.market_regime || {});
+          renderMarketHistory(data.market_regime || {});
+          renderSnapshotChart(persistSnapshot(data));
         } catch (error) {
           const message = error instanceof Error ? error.message : "Unknown failure";
+          document.getElementById("regime-panel").className = "error";
+          document.getElementById("regime-panel").textContent = message;
           document.getElementById("top-option-container").className = "error";
-          document.getElementById("top-option-container").textContent = message;
+          document.getElementById("top-option-container").textContent = "Could not load best contract.";
           document.getElementById("table-container").className = "error";
           document.getElementById("table-container").textContent = "Could not render rankings.";
+          document.getElementById("market-history-chart").className = "error";
+          document.getElementById("market-history-chart").textContent = "Could not build history chart.";
+          document.getElementById("snapshot-chart").className = "error";
+          document.getElementById("snapshot-chart").textContent = "Could not build snapshot chart.";
           document.getElementById("updated-pill").textContent = "Load failed";
         } finally {
           refreshButton.disabled = false;
@@ -623,6 +936,7 @@
       }
 
       document.getElementById("refresh-button").addEventListener("click", loadDashboard);
+      renderSnapshotChart(loadSnapshots());
       loadDashboard();
     </script>
   </body>
