@@ -289,6 +289,49 @@
         margin-bottom: 14px;
       }
 
+      .tracker-chart-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.85fr);
+        gap: 14px;
+        align-items: stretch;
+      }
+
+      .tracker-chart-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .tracker-view-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .tracker-toggle-button {
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        background: rgba(148, 163, 184, 0.08);
+        box-shadow: none;
+        color: var(--muted);
+        font-size: 0.82rem;
+        font-weight: 700;
+      }
+
+      .tracker-toggle-button:hover {
+        filter: none;
+        color: var(--text);
+        background: rgba(148, 163, 184, 0.12);
+      }
+
+      .tracker-toggle-button.active {
+        color: #bfdbfe;
+        border-color: rgba(96, 165, 250, 0.32);
+        background: rgba(37, 99, 235, 0.18);
+      }
+
       .explain-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
         margin-bottom: 18px;
@@ -952,6 +995,7 @@
         .regime-top-charts,
         .regime-grid,
         .metric-grid,
+        .tracker-chart-grid,
         .tracker-grid,
         .columns,
         .history-grid,
@@ -1099,7 +1143,13 @@
           </div>
         </div>
         <div id="svxy-tracker-panel" class="loading">Loading SVXY trend data...</div>
-        <div id="svxy-tracker-chart" class="loading" style="margin-top: 14px">Loading SVXY price chart...</div>
+        <div class="tracker-chart-grid" style="margin-top: 14px">
+          <div class="tracker-chart-panel">
+            <div id="svxy-tracker-view-controls" class="loading">Loading chart controls...</div>
+            <div id="svxy-tracker-chart" class="loading">Loading SVXY price chart...</div>
+          </div>
+          <div id="svxy-intraday-chart" class="loading">Loading SVXY current-day chart...</div>
+        </div>
       </section>
 
       <section class="panel section regime-section">
@@ -1527,14 +1577,90 @@
         renderRegimeOverlayLineChart("regime-history-chart", vix2dCandles, vix3m2dCandles);
       }
 
+      let svxyTrackerView = "default";
+      let latestSvxyTracker = null;
+
+      function renderSvxyTrackerViewControls() {
+        const container = document.getElementById("svxy-tracker-view-controls");
+        if (!container) return;
+
+        container.className = "tracker-view-toggle";
+        container.innerHTML = `
+          <button
+            type="button"
+            class="tracker-toggle-button ${svxyTrackerView === "default" ? "active" : ""}"
+            data-svxy-view="default"
+          >
+            Default View
+          </button>
+          <button
+            type="button"
+            class="tracker-toggle-button ${svxyTrackerView === "current_day" ? "active" : ""}"
+            data-svxy-view="current_day"
+          >
+            Current Day
+          </button>
+        `;
+
+        container.querySelectorAll("[data-svxy-view]").forEach((button) => {
+          if (button.dataset.bound === "true") return;
+          button.dataset.bound = "true";
+          button.addEventListener("click", () => {
+            const nextView = button.dataset.svxyView || "default";
+            if (nextView === svxyTrackerView) return;
+            svxyTrackerView = nextView;
+            if (latestSvxyTracker) renderSvxyTracker(latestSvxyTracker);
+          });
+        });
+      }
+
+      function renderSvxyTrackerMainChart(tracker) {
+        const priceHistory = (tracker?.history || []).map((point) => point.close);
+        const sma20Series = movingAverage(priceHistory, 20);
+        const intradayCandles = Array.isArray(tracker?.intraday) ? tracker.intraday : [];
+
+        if (svxyTrackerView === "current_day") {
+          renderChart(
+            "svxy-tracker-chart",
+            [
+              {
+                label: "SVXY",
+                color: "#60a5fa",
+                values: intradayCandles.map((candle) => candle.close),
+              },
+            ],
+            intradayCandles.map((candle) => formatIntradayLabel(candle, intradayCandles)),
+          );
+          return;
+        }
+
+        renderChart(
+          "svxy-tracker-chart",
+          [
+            {
+              label: "SVXY",
+              color: "#60a5fa",
+              values: priceHistory,
+            },
+            {
+              label: "20D Trend",
+              color: "rgba(248, 250, 252, 0.55)",
+              values: sma20Series,
+              strokeWidth: 2,
+              strokeDasharray: "6 6",
+            },
+          ],
+          (tracker?.history || []).map((point) => point.date),
+        );
+      }
+
       function renderSvxyTracker(tracker) {
+        latestSvxyTracker = tracker;
         const panel = document.getElementById("svxy-tracker-panel");
-        const chart = document.getElementById("svxy-tracker-chart");
         const trendState = tracker?.trend_state || "mixed";
         const trendClass = trendState === "uptrend" ? "good" : trendState === "downtrend" ? "bad" : "warn";
         const spotChangeClass = (tracker?.spot_change_from_last_close ?? 0) >= 0 ? "good" : "bad";
-        const priceHistory = (tracker?.history || []).map((point) => point.close);
-        const sma20Series = movingAverage(priceHistory, 20);
+        const intradayCandles = Array.isArray(tracker?.intraday) ? tracker.intraday : [];
 
         panel.className = "tracker-grid";
         panel.innerHTML = `
@@ -1575,23 +1701,13 @@
           </div>
         `;
 
-        renderChart(
-          "svxy-tracker-chart",
-          [
-            {
-              label: "SVXY",
-              color: "#60a5fa",
-              values: priceHistory,
-            },
-            {
-              label: "20D Trend",
-              color: "rgba(248, 250, 252, 0.55)",
-              values: sma20Series,
-              strokeWidth: 2,
-              strokeDasharray: "6 6",
-            },
-          ],
-          (tracker?.history || []).map((point) => point.date),
+        renderSvxyTrackerViewControls();
+        renderSvxyTrackerMainChart(tracker);
+        renderSingleCandlestickChart(
+          "svxy-intraday-chart",
+          "SVXY",
+          "Current Day | 5 minute candles",
+          intradayCandles,
         );
       }
 
@@ -2303,8 +2419,12 @@
           const message = error instanceof Error ? error.message : "Unknown failure";
           document.getElementById("svxy-tracker-panel").className = "error";
           document.getElementById("svxy-tracker-panel").textContent = message;
+          document.getElementById("svxy-tracker-view-controls").className = "error";
+          document.getElementById("svxy-tracker-view-controls").textContent = "Could not build SVXY chart controls.";
           document.getElementById("svxy-tracker-chart").className = "error";
           document.getElementById("svxy-tracker-chart").textContent = "Could not build SVXY tracker.";
+          document.getElementById("svxy-intraday-chart").className = "error";
+          document.getElementById("svxy-intraday-chart").textContent = "Could not build SVXY current-day chart.";
           document.getElementById("regime-panel").className = "error";
           document.getElementById("regime-panel").textContent = message;
           document.getElementById("regime-history-chart").className = "error";

@@ -258,6 +258,7 @@ def _moving_average(values: list[float], length: int) -> float | None:
 
 def _build_svxy_tracker(ticker: yf.Ticker, spot_price: float) -> dict[str, Any]:
     history = _fetch_close_history(SVXY_SYMBOL, period="6mo")
+    intraday = _fetch_intraday_ohlc(SVXY_SYMBOL)
     closes = [point["close"] for point in history if _coerce_float(point.get("close")) is not None]
 
     last_close = _fetch_previous_close(ticker)
@@ -284,6 +285,7 @@ def _build_svxy_tracker(ticker: yf.Ticker, spot_price: float) -> dict[str, Any]:
         "sma_50": sma_50,
         "trend_state": trend_state,
         "history": history[-60:],
+        "intraday": intraday,
     }
 
 
