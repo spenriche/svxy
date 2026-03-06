@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/svxy",
+      "schedule": "0 13 * * *"
+    }
+  ]
+}
