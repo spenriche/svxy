@@ -17,12 +17,13 @@ VVIX_SYMBOL = "^VVIX"
 DEFAULT_TOP_N = 5
 DEFAULT_RISK_FREE_RATE = float(os.getenv("RISK_FREE_RATE", "0.04"))
 NEGATIVE_EXTRINSIC_TOLERANCE = -0.05
-MIN_OPEN_INTEREST = int(os.getenv("MIN_OPEN_INTEREST", "100"))
 MIN_VOLUME = int(os.getenv("MIN_VOLUME", "5"))
 MAX_SPREAD_PCT = float(os.getenv("MAX_SPREAD_PCT", "0.25"))
 SECONDARY_ITM_PERCENT = [5, 30]
 PRIMARY_DELTA_RANGE = [0.90, 0.98]
 SECONDARY_DELTA_RANGE = [0.70, 0.90]
+PRIMARY_EXPIRATION_WINDOW_MONTHS = [6, 18]
+SECONDARY_EXPIRATION_WINDOW_MONTHS = [6, 12]
 
 
 class ScanError(RuntimeError):
@@ -118,8 +119,14 @@ def _round(value: float) -> float:
     return round(float(value), 4)
 
 
-def _within_expiration_window(expiration: datetime, now: datetime) -> bool:
-    return now + timedelta(days=182) <= expiration <= now + timedelta(days=548)
+def _within_expiration_window(
+    expiration: datetime,
+    now: datetime,
+    *,
+    min_days: int,
+    max_days: int,
+) -> bool:
+    return now + timedelta(days=min_days) <= expiration <= now + timedelta(days=max_days)
 
 
 def _fetch_quote_price(ticker: yf.Ticker, symbol: str) -> float:
@@ -136,6 +143,31 @@ def _fetch_quote_price(ticker: yf.Ticker, symbol: str) -> float:
     if close is None:
         raise ScanError(f"Market price missing for {symbol}.")
     return close
+
+
+def _fetch_previous_close(ticker: yf.Ticker) -> float | None:
+    fast_info = getattr(ticker, "fast_info", {}) or {}
+    for field in ("regularMarketPreviousClose", "previousClose"):
+        previous_close = _coerce_float(fast_info.get(field))
+        if previous_close is not None and previous_close > 0:
+            return previous_close
+
+    info = getattr(ticker, "info", {}) or {}
+    for field in ("regularMarketPreviousClose", "previousClose"):
+        previous_close = _coerce_float(info.get(field))
+        if previous_close is not None and previous_close > 0:
+            return previous_close
+
+    history = ticker.history(period="10d", interval="1d", auto_adjust=False)
+    if history.empty or "Close" not in history:
+        return None
+
+    closes = history["Close"].dropna().tolist()
+    if len(closes) >= 2:
+        return _coerce_float(closes[-2])
+    if closes:
+        return _coerce_float(closes[-1])
+    return None
 
 
 def _fetch_close_history(symbol: str, *, period: str = "3mo") -> list[dict[str, Any]]:
@@ -155,6 +187,52 @@ def _fetch_close_history(symbol: str, *, period: str = "3mo") -> list[dict[str, 
             }
         )
     return points
+
+
+def _calculate_pct_return(
+    current_value: float,
+    previous_value: float | None,
+) -> float | None:
+    if previous_value in (None, 0):
+        return None
+    return _round((current_value / previous_value) - 1.0)
+
+
+def _moving_average(values: list[float], length: int) -> float | None:
+    if len(values) < length:
+        return None
+    return _round(sum(values[-length:]) / length)
+
+
+def _build_svxy_tracker(ticker: yf.Ticker, spot_price: float) -> dict[str, Any]:
+    history = _fetch_close_history(SVXY_SYMBOL, period="6mo")
+    closes = [point["close"] for point in history if _coerce_float(point.get("close")) is not None]
+
+    last_close = _fetch_previous_close(ticker)
+    previous_5d = closes[-6] if len(closes) >= 6 else None
+    previous_20d = closes[-21] if len(closes) >= 21 else None
+    sma_20 = _moving_average(closes, 20)
+    sma_50 = _moving_average(closes, 50)
+
+    trend_state = "mixed"
+    if sma_20 is not None and sma_50 is not None:
+        if spot_price > sma_20 > sma_50:
+            trend_state = "uptrend"
+        elif spot_price < sma_20 < sma_50:
+            trend_state = "downtrend"
+
+    return {
+        "symbol": SVXY_SYMBOL,
+        "spot_price": _round(spot_price),
+        "last_close": _round(last_close) if last_close is not None else None,
+        "spot_change_from_last_close": _calculate_pct_return(spot_price, last_close),
+        "five_day_return": _calculate_pct_return(spot_price, previous_5d),
+        "twenty_day_return": _calculate_pct_return(spot_price, previous_20d),
+        "sma_20": sma_20,
+        "sma_50": sma_50,
+        "trend_state": trend_state,
+        "history": history[-60:],
+    }
 
 
 def _latest_and_previous(points: list[dict[str, Any]]) -> tuple[float | None, float | None]:
@@ -367,8 +445,6 @@ def _build_exception_reasons(
         reasons.append(
             f"outside deep ITM delta band {primary_delta_min:.2f}-{primary_delta_max:.2f}"
         )
-    if option.open_interest < MIN_OPEN_INTEREST:
-        reasons.append(f"open interest below {MIN_OPEN_INTEREST}")
     if option.volume < MIN_VOLUME:
         reasons.append(f"volume below {MIN_VOLUME}")
     if option.spread_pct > MAX_SPREAD_PCT:
@@ -376,14 +452,14 @@ def _build_exception_reasons(
     return reasons
 
 
-def _build_best_call_spread(
+def _build_call_spread_candidates(
     *,
     ticker: yf.Ticker,
     spot_price: float,
     best_option: RankedOption | None,
-) -> BestCallSpread | None:
+) -> list[BestCallSpread]:
     if best_option is None:
-        return None
+        return []
 
     option_chain = ticker.option_chain(best_option.expiration)
     calls_frame = option_chain.calls
@@ -427,9 +503,6 @@ def _build_best_call_spread(
             )
         )
 
-    if not candidates:
-        return None
-
     candidates.sort(
         key=lambda spread: (
             -spread.max_return,
@@ -437,9 +510,10 @@ def _build_best_call_spread(
             spread.spread_cost,
         )
     )
-    best_spread = candidates[0]
-    best_spread.candidate_count = len(candidates)
-    return best_spread
+    candidate_count = len(candidates)
+    for spread in candidates:
+        spread.candidate_count = candidate_count
+    return candidates
 
 
 def _calculate_entry_score(
@@ -465,6 +539,10 @@ def scan_svxy_deep_itm_calls(
     now = datetime.now(UTC)
     ticker = yf.Ticker(SVXY_SYMBOL)
     spot_price = _fetch_quote_price(ticker, SVXY_SYMBOL)
+    primary_min_days = 182
+    primary_max_days = 548
+    secondary_min_days = 182
+    secondary_max_days = 365
 
     lower_bound_strike = spot_price * (1 - 0.60)
     upper_bound_strike = spot_price * (1 - 0.40)
@@ -478,7 +556,19 @@ def scan_svxy_deep_itm_calls(
     exception_options: list[tuple[RankedOption, list[str]]] = []
     for expiration_text in expirations:
         expiration = datetime.strptime(expiration_text, "%Y-%m-%d").replace(tzinfo=UTC)
-        if not _within_expiration_window(expiration, now):
+        in_primary_expiration_window = _within_expiration_window(
+            expiration,
+            now,
+            min_days=primary_min_days,
+            max_days=primary_max_days,
+        )
+        in_secondary_expiration_window = _within_expiration_window(
+            expiration,
+            now,
+            min_days=secondary_min_days,
+            max_days=secondary_max_days,
+        )
+        if not in_primary_expiration_window and not in_secondary_expiration_window:
             continue
 
         option_chain = ticker.option_chain(expiration_text)
@@ -514,9 +604,18 @@ def scan_svxy_deep_itm_calls(
                     primary_delta_min=primary_delta_min,
                     primary_delta_max=primary_delta_max,
                 )
-                if in_primary_band and in_primary_delta_band and not exception_reasons:
+                if (
+                    in_primary_expiration_window
+                    and in_primary_band
+                    and in_primary_delta_band
+                    and not exception_reasons
+                ):
                     qualified_options.append(ranked)
-                elif in_secondary_band and in_secondary_delta_band:
+                elif (
+                    in_secondary_expiration_window
+                    and in_secondary_band
+                    and in_secondary_delta_band
+                ):
                     exception_options.append((ranked, exception_reasons))
 
     qualified_options.sort(key=_option_sort_key)
@@ -526,11 +625,12 @@ def scan_svxy_deep_itm_calls(
     top_option = qualified_options[0] if qualified_options else (
         exception_options[0][0] if exception_options else None
     )
-    best_call_spread = _build_best_call_spread(
+    call_spread_candidates = _build_call_spread_candidates(
         ticker=ticker,
         spot_price=spot_price,
         best_option=top_option,
     )
+    best_call_spread = call_spread_candidates[0] if call_spread_candidates else None
     entry_score = _calculate_entry_score(market_regime=market_regime, top_option=top_option)
     market_regime["entry_score"] = entry_score
     market_regime["ideal_entry"] = entry_score >= 75
@@ -557,17 +657,18 @@ def scan_svxy_deep_itm_calls(
         "symbol": SVXY_SYMBOL,
         "generated_at": now.isoformat(),
         "svxy_price": _round(spot_price),
+        "svxy_tracker": _build_svxy_tracker(ticker, spot_price),
         "filters": {
-            "expiration_window_months": [6, 18],
+            "expiration_window_months": PRIMARY_EXPIRATION_WINDOW_MONTHS,
             "strike_itm_percent": [40, 60],
             "deep_itm_delta_range": PRIMARY_DELTA_RANGE,
             "lower_bound_strike": _round(lower_bound_strike),
             "upper_bound_strike": _round(upper_bound_strike),
+            "secondary_expiration_window_months": SECONDARY_EXPIRATION_WINDOW_MONTHS,
             "secondary_itm_percent": SECONDARY_ITM_PERCENT,
             "secondary_delta_range": SECONDARY_DELTA_RANGE,
             "secondary_lower_bound_strike": _round(secondary_lower_bound_strike),
             "secondary_upper_bound_strike": _round(secondary_upper_bound_strike),
-            "min_open_interest": MIN_OPEN_INTEREST,
             "min_volume": MIN_VOLUME,
             "max_spread_pct": MAX_SPREAD_PCT,
         },
@@ -575,6 +676,7 @@ def scan_svxy_deep_itm_calls(
         "candidate_count": len(qualified_options),
         "exception_candidate_count": len(exception_options),
         "top_options": top_options,
+        "top_call_spreads": [asdict(spread) for spread in call_spread_candidates[:top_n]],
         "best_call_spread": asdict(best_call_spread) if best_call_spread else None,
     }
 
