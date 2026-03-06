@@ -20,7 +20,9 @@ NEGATIVE_EXTRINSIC_TOLERANCE = -0.05
 MIN_OPEN_INTEREST = int(os.getenv("MIN_OPEN_INTEREST", "100"))
 MIN_VOLUME = int(os.getenv("MIN_VOLUME", "5"))
 MAX_SPREAD_PCT = float(os.getenv("MAX_SPREAD_PCT", "0.25"))
-DISPLAY_BACKFILL_STRIKE_ITM_PERCENT = [30, 70]
+SECONDARY_ITM_PERCENT = [5, 30]
+PRIMARY_DELTA_RANGE = [0.90, 0.98]
+SECONDARY_DELTA_RANGE = [0.70, 0.90]
 
 
 class ScanError(RuntimeError):
@@ -341,10 +343,16 @@ def _build_exception_reasons(
     option: RankedOption,
     strict_lower_bound_strike: float,
     strict_upper_bound_strike: float,
+    primary_delta_min: float,
+    primary_delta_max: float,
 ) -> list[str]:
     reasons: list[str] = []
     if not (strict_lower_bound_strike <= option.strike <= strict_upper_bound_strike):
         reasons.append("outside primary ITM band")
+    if not (primary_delta_min <= option.delta <= primary_delta_max):
+        reasons.append(
+            f"outside deep ITM delta band {primary_delta_min:.2f}-{primary_delta_max:.2f}"
+        )
     if option.open_interest < MIN_OPEN_INTEREST:
         reasons.append(f"open interest below {MIN_OPEN_INTEREST}")
     if option.volume < MIN_VOLUME:
@@ -380,8 +388,10 @@ def scan_svxy_deep_itm_calls(
 
     lower_bound_strike = spot_price * (1 - 0.60)
     upper_bound_strike = spot_price * (1 - 0.40)
-    display_lower_bound_strike = spot_price * (1 - 0.70)
-    display_upper_bound_strike = spot_price * (1 - 0.30)
+    secondary_lower_bound_strike = spot_price * (1 - 0.30)
+    secondary_upper_bound_strike = spot_price * (1 - 0.05)
+    primary_delta_min, primary_delta_max = PRIMARY_DELTA_RANGE
+    secondary_delta_min, secondary_delta_max = SECONDARY_DELTA_RANGE
     expirations = getattr(ticker, "options", ()) or ()
 
     qualified_options: list[RankedOption] = []
@@ -395,9 +405,14 @@ def scan_svxy_deep_itm_calls(
         calls_frame = option_chain.calls
         for raw_option in calls_frame.to_dict("records"):
             strike = _coerce_float(raw_option.get("strike"))
-            if strike is None or not (
-                display_lower_bound_strike <= strike <= display_upper_bound_strike
-            ):
+            if strike is None:
+                continue
+
+            in_primary_band = lower_bound_strike <= strike <= upper_bound_strike
+            in_secondary_band = (
+                secondary_lower_bound_strike <= strike <= secondary_upper_bound_strike
+            )
+            if not in_primary_band and not in_secondary_band:
                 continue
 
             ranked = _format_option(
@@ -408,15 +423,21 @@ def scan_svxy_deep_itm_calls(
                 risk_free_rate=risk_free_rate,
             )
             if ranked is not None:
+                in_primary_delta_band = primary_delta_min <= ranked.delta <= primary_delta_max
+                in_secondary_delta_band = (
+                    secondary_delta_min <= ranked.delta < secondary_delta_max
+                )
                 exception_reasons = _build_exception_reasons(
                     option=ranked,
                     strict_lower_bound_strike=lower_bound_strike,
                     strict_upper_bound_strike=upper_bound_strike,
+                    primary_delta_min=primary_delta_min,
+                    primary_delta_max=primary_delta_max,
                 )
-                if exception_reasons:
-                    exception_options.append((ranked, exception_reasons))
-                else:
+                if in_primary_band and in_primary_delta_band and not exception_reasons:
                     qualified_options.append(ranked)
+                elif in_secondary_band and in_secondary_delta_band:
+                    exception_options.append((ranked, exception_reasons))
 
     qualified_options.sort(key=_option_sort_key)
     exception_options.sort(key=lambda item: _option_sort_key(item[0]))
@@ -454,11 +475,13 @@ def scan_svxy_deep_itm_calls(
         "filters": {
             "expiration_window_months": [6, 18],
             "strike_itm_percent": [40, 60],
+            "deep_itm_delta_range": PRIMARY_DELTA_RANGE,
             "lower_bound_strike": _round(lower_bound_strike),
             "upper_bound_strike": _round(upper_bound_strike),
-            "display_backfill_itm_percent": DISPLAY_BACKFILL_STRIKE_ITM_PERCENT,
-            "display_lower_bound_strike": _round(display_lower_bound_strike),
-            "display_upper_bound_strike": _round(display_upper_bound_strike),
+            "secondary_itm_percent": SECONDARY_ITM_PERCENT,
+            "secondary_delta_range": SECONDARY_DELTA_RANGE,
+            "secondary_lower_bound_strike": _round(secondary_lower_bound_strike),
+            "secondary_upper_bound_strike": _round(secondary_upper_bound_strike),
             "min_open_interest": MIN_OPEN_INTEREST,
             "min_volume": MIN_VOLUME,
             "max_spread_pct": MAX_SPREAD_PCT,

@@ -880,7 +880,7 @@
               <span>Top 5 Contracts</span>
               <span class="info-icon" tabindex="0" data-tooltip="This table shows the best liquid candidates after filtering. The top row is the contract the scanner currently prefers.">?</span>
             </h2>
-            <p class="section-subtitle">Blue ranks are fully qualified. Amber ranks are backfill exceptions.</p>
+            <p class="section-subtitle">Blue ranks are Deep ITM 0.90-0.98 delta. Amber ranks are ITM fallback 0.70-0.90 delta.</p>
           </div>
         </div>
         <div id="table-container" class="loading">Building rankings table...</div>
@@ -1000,30 +1000,44 @@
           <div class="filter-row">
             <div class="filter-label label-with-help">
               <span>ITM Range</span>
-              ${helpIcon("In the money means the strike is below the stock price for a call. This scanner only looks at strikes that are already 40% to 60% in the money.")}
+              ${helpIcon("This is the primary deep in-the-money bucket. The scanner prefers calls that are already 40% to 60% in the money.")}
             </div>
             <div>${filters.strike_itm_percent[0]}%-${filters.strike_itm_percent[1]}%</div>
           </div>
           <div class="filter-row">
             <div class="filter-label label-with-help">
-              <span>Top 5 Backfill Band</span>
-              ${helpIcon("If there are not enough fully qualified contracts, the table can backfill with nearby exceptions from this wider ITM band. Those rows are marked in amber.")} 
+              <span>Deep ITM Delta</span>
+              ${helpIcon("Primary deep ITM contracts must also land in this delta band. Higher delta means the option behaves more like stock.")} 
             </div>
-            <div>${filters.display_backfill_itm_percent[0]}%-${filters.display_backfill_itm_percent[1]}%</div>
+            <div>${formatNumber(filters.deep_itm_delta_range[0], 2)}-${formatNumber(filters.deep_itm_delta_range[1], 2)}</div>
+          </div>
+          <div class="filter-row">
+            <div class="filter-label label-with-help">
+              <span>Secondary ITM Range</span>
+              ${helpIcon("If there are not enough deep ITM contracts, the Top 5 table can backfill from this lighter in-the-money bucket. Those rows are marked in amber.")} 
+            </div>
+            <div>${filters.secondary_itm_percent[0]}%-${filters.secondary_itm_percent[1]}%</div>
+          </div>
+          <div class="filter-row">
+            <div class="filter-label label-with-help">
+              <span>Secondary ITM Delta</span>
+              ${helpIcon("Fallback ITM contracts must land in this lower delta band. These rows are shown only when the deep ITM bucket is too small.")} 
+            </div>
+            <div>${formatNumber(filters.secondary_delta_range[0], 2)}-${formatNumber(filters.secondary_delta_range[1], 2)}</div>
           </div>
           <div class="filter-row">
             <div class="filter-label label-with-help">
               <span>Strike Bounds</span>
-              ${helpIcon("These are the actual strike prices implied by the current SVXY spot price and the 40% to 60% in-the-money rule.")}
+              ${helpIcon("These are the actual strike prices implied by the current SVXY spot price and the primary 40% to 60% deep ITM rule.")}
             </div>
             <div>${formatCurrency(filters.lower_bound_strike)} to ${formatCurrency(filters.upper_bound_strike)}</div>
           </div>
           <div class="filter-row">
             <div class="filter-label label-with-help">
-              <span>Backfill Bounds</span>
-              ${helpIcon("These are the wider strike bounds used only to populate the Top 5 table when the strict filter leaves too few names.")} 
+              <span>Secondary Bounds</span>
+              ${helpIcon("These are the strike bounds for the secondary 5% to 30% ITM bucket used only when the strict deep ITM set is too small.")} 
             </div>
-            <div>${formatCurrency(filters.display_lower_bound_strike)} to ${formatCurrency(filters.display_upper_bound_strike)}</div>
+            <div>${formatCurrency(filters.secondary_lower_bound_strike)} to ${formatCurrency(filters.secondary_upper_bound_strike)}</div>
           </div>
           <div class="filter-row">
             <div class="filter-label label-with-help">
@@ -1249,16 +1263,33 @@
           return;
         }
 
+        const qualifiedCount = options.filter((option) => option.filter_status === "qualified").length;
+        const exceptionCount = options.filter((option) => option.filter_status === "exception").length;
+        const qualifiedDeltas = options
+          .filter((option) => option.filter_status === "qualified")
+          .map((option) => option.delta);
+        const exceptionDeltas = options
+          .filter((option) => option.filter_status === "exception")
+          .map((option) => option.delta);
+        const deltaRangeLabel = (deltas) => {
+          if (!deltas.length) return "none";
+          const min = Math.min(...deltas);
+          const max = Math.max(...deltas);
+          return min === max
+            ? formatNumber(min, 4)
+            : `${formatNumber(min, 4)}-${formatNumber(max, 4)}`;
+        };
+
         container.className = "table-wrap";
         container.innerHTML = `
           <div class="table-legend">
             <span class="legend-chip">
               <span class="legend-swatch qualified"></span>
-              Fully qualified
+              Deep ITM ${formatNumber(0.9, 2)}-${formatNumber(0.98, 2)} delta (${qualifiedCount}, live ${deltaRangeLabel(qualifiedDeltas)})
             </span>
             <span class="legend-chip">
               <span class="legend-swatch exception"></span>
-              Backfill exception
+              ITM ${formatNumber(0.7, 2)}-${formatNumber(0.9, 2)} delta (${exceptionCount}, live ${deltaRangeLabel(exceptionDeltas)})
             </span>
           </div>
           <table>
@@ -1280,7 +1311,7 @@
             </thead>
             <tbody>
               ${options.map((option, index) => `
-                <tr class="${option.filter_status === "exception" ? "exception-row" : ""}" title="${option.filter_status === "exception" ? escapeHtml(`Backfill exception: ${(option.exception_reasons || []).join(", ")}`) : "Fully qualified contract"}">
+                <tr class="${option.filter_status === "exception" ? "exception-row" : ""}" title="${option.filter_status === "exception" ? escapeHtml(`ITM fallback: ${(option.exception_reasons || []).join(", ")}`) : "Deep ITM qualified contract"}">
                   <td><span class="rank ${option.filter_status === "exception" ? "exception" : ""}">${index + 1}</span></td>
                   <td>${escapeHtml(option.expiration)}</td>
                   <td>${formatCurrency(option.strike)}</td>
